@@ -16,13 +16,14 @@ def init_logger():
     logger.setLevel(INFO)
 
 class QSOquery:
-    def __init__(self,sname,band='4',almaurl='https://almascience.nao.ac.jp',download_d='./'):
+    def __init__(self,sname,band='4',almaurl='https://almascience.nao.ac.jp',download_d='./',replaceNAOJ=False):
         self.sname = sname
         self.band = band
         self.almaurl = almaurl
         self.myAlma = Alma()
         self.myAlma.archive_url = almaurl
         self.download_d = download_d
+        self.replaceNAOJ=False
 
     def queryALMA(self,almaquery=True):
         service = pyvo.dal.TAPService(self.almaurl+"/tap")
@@ -61,7 +62,11 @@ class QSOquery:
 
     def wget_f(self,num):
         getLogger().info("%s start", num)
-        os.system('wget -q -P '+self.download_d+' '+self.url_list[num][0])
+        if self.replaceNAOJ:
+            download_url = (self.url_list[num][0]).replace(self.almaurl,"https://almascience.nao.ac.jp")
+        else:
+            download_url = self.url_list[num][0]
+        os.system('wget -q -P '+self.download_d+' '+download_url)
         getLogger().info("%s end", num)
 
     def download(self):
