@@ -36,8 +36,8 @@ class QSOquery:
         else:
             return service.search(query).to_table().to_pandas()
 
-    def get_data_urls(self):
-        rlist = self.queryALMA()
+    def get_data_urls(self,almaquery=True):
+        rlist = self.queryALMA(almaquery=almaquery)
         mous_list = np.unique(rlist['member_ous_uid'])
 
         total_size = 0.
