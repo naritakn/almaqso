@@ -67,6 +67,7 @@ class QSOquery:
         else:
             download_url = self.url_list[num][0]
         os.system('wget -q -P '+self.download_d+' '+download_url)
+        print('wget -q -P '+self.download_d+' '+download_url)
         getLogger().info("%s end", num)
 
     def download(self):
