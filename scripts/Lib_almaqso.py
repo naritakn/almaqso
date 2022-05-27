@@ -23,7 +23,7 @@ class QSOquery:
         self.myAlma = Alma()
         self.myAlma.archive_url = almaurl
         self.download_d = download_d
-        self.replaceNAOJ=False
+        self.replaceNAOJ=replaceNAOJ
 
     def queryALMA(self,almaquery=True):
         service = pyvo.dal.TAPService(self.almaurl+"/tap")
