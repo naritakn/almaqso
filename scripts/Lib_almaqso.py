@@ -47,12 +47,15 @@ class QSOquery:
             uid_url_table = self.myAlma.get_data_info(mous)
 
             url_size = [[url,size] for (url,size) in zip(uid_url_table['access_url'],uid_url_table['content_length']) if '.asdm.sdm.tar' in url]
+            if not url_size == []:
+                asdm_size = (np.array(url_size)[:,1].astype('float')).sum()/1.e9
 
-            asdm_size = (np.array(url_size)[:,1].astype('float')).sum()/1.e9
+                url_list = np.vstack([url_list,np.array(url_size)])
+                print('['+str(id+1)+'/'+str(len(mous_list))+'] '+str(asdm_size))
+                total_size = total_size + asdm_size
 
-            url_list = np.vstack([url_list,np.array(url_size)])
-            print('['+str(id+1)+'/'+str(len(mous_list))+'] '+str(asdm_size))
-            total_size = total_size + asdm_size
+            else:
+                print('['+str(id+1)+'/'+str(len(mous_list))+'] -> skipped (may be SV)')
 
         url_list = url_list[1:]
 
