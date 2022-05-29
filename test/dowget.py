@@ -12,7 +12,7 @@ nworker = 10
 from concurrent.futures import ThreadPoolExecutor
 from logging import StreamHandler, Formatter, INFO, getLogger
 
-flist = np.load(args[1])[:,0]
+flist = np.unique(np.load(args[1])[:,0])
 
 def init_logger():
     handler = StreamHandler()
