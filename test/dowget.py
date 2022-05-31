@@ -37,6 +37,7 @@ def wget_f(num):
 
 def download():
     nFiles = flist.shape[0]
+
     init_logger()
     getLogger().info("main start")
     with ThreadPoolExecutor(max_workers=min(nFiles,nworker), thread_name_prefix="thread") as executor:
