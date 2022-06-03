@@ -488,7 +488,10 @@ class QSOanalysis():
             if self.spacesave:
                 os.system('rm -rf *.last')
                 os.system('rm -rf byspw')
-                os.system('rm -rf calibrated')
+                try:
+                    os.system('mkfir -p log')
+                    os.system('mv ./calibrated/*.lisrobs ./log/')
+                    os.system('rm -rf calibrated')
                 os.system('rm -rf '+self.asdmname+'*')
                 os.system('rm -rf '+self.projID)
 
