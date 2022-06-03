@@ -490,8 +490,11 @@ class QSOanalysis():
                 os.system('rm -rf byspw')
                 try:
                     os.system('mkfir -p log')
-                    os.system('mv ./calibrated/*.lisrobs ./log/')
-                    os.system('rm -rf calibrated')
+                    os.system('mv ./calibrated/*.listobs ./log/')
+                except:
+                    print('ERROR: copy listobs failed')
+
+                os.system('rm -rf calibrated')
                 os.system('rm -rf '+self.asdmname+'*')
                 os.system('rm -rf '+self.projID)
 
