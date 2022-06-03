@@ -25,7 +25,7 @@ class QSOanalysis():
 
     def writelog(self,content=''):
         os.system('mkdir -p log')
-        os.system('touch ./log/'+self.asdmname+'analysis.log')
+        os.system('touch ./log/'+self.asdmname+'.analysis.log')
         os.system('echo "'+content+'" >> '+'./log/'+self.asdmname+'.analysis.log')
 
     # step0: untar & make working dir
