@@ -38,7 +38,7 @@ def casa_f(num):
         cmd = '"' + 'execfile('+"'"+'./python_scripts/'+cmdfile.replace('.py','.'+tarfilename+'.py')+"'"+')' +'"'
         print('running: '+tarfilename)
         os.system('touch ./log/'+tarfilename+'.log')
-        os.system('casa --nologger --nogui --nologfile -c '+cmd+' >'+'./log/'+tarfilename+'.log')
+        os.system('casa --nologger --nogui --nologfile -c '+cmd+' >> '+'./log/'+tarfilename+'.log')
     else:
         print('dryrun: '+tarfilename)
 
