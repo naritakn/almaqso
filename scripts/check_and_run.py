@@ -8,8 +8,11 @@ args = sys.argv
 
 tarlist = glob.glob('*.tar')
 urllist = np.load(args[1])
-if not args[2] == None
-rmflag = str(args[2])
+
+try:
+    rmflag = str(args[2])
+except:
+    rmflag = 'save'
 
 exec_tarlist = []
 
@@ -18,7 +21,7 @@ for f in tarlist:
     if dd > 0:
         print(f+' '+str(dd/1024/1024/1024))
         if rmflag == 'rm':
-            print('rm -rf '+f)
+            os.system('rm -rf '+f)
     else:
         exec_tarlist.append(f)
 
