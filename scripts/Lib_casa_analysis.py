@@ -29,37 +29,41 @@ class QSOanalysis():
         os.system('echo "'+content+'" >> '+'./log/'+self.asdmname+'.analysis.log')
 
     # step0: untar & make working dir
-    def intial_proc(self):
+    def intial_proc(self,dryrun=False):
 
-        if self.workingDir!=None:
-            os.chdir(self.workingDir)
-
-        if os.path.exists(self.tarfilename):
-            os.system('mkdir -p '+self.asdmname)
-            os.system('mv '+self.tarfilename+' '+self.asdmname+'/')
+        if dryrun:
             os.chdir(self.asdmname)
-            os.system('tar -xvf '+self.tarfilename)
 
-        elif os.path.exists(self.tarfilename+'.gz'):
-            os.system('mkdir -p '+self.asdmname)
-            os.system('mv '+self.tarfilename+'.gz '+self.asdmname+'/')
-            os.chdir(self.asdmname)
-            os.system('gzip -d '+self.tarfilename+'.gz')
-            os.system('tar -xvf '+self.tarfilename)
-
-        elif os.path.exists(self.asdmname):
-            os.chdir(self.asdmname)
+        else:
+            if self.workingDir!=None:
+                os.chdir(self.workingDir)
 
             if os.path.exists(self.tarfilename):
+                os.system('mkdir -p '+self.asdmname)
+                os.system('mv '+self.tarfilename+' '+self.asdmname+'/')
+                os.chdir(self.asdmname)
                 os.system('tar -xvf '+self.tarfilename)
 
             elif os.path.exists(self.tarfilename+'.gz'):
+                os.system('mkdir -p '+self.asdmname)
+                os.system('mv '+self.tarfilename+'.gz '+self.asdmname+'/')
+                os.chdir(self.asdmname)
                 os.system('gzip -d '+self.tarfilename+'.gz')
                 os.system('tar -xvf '+self.tarfilename)
 
-        else:
-            print('Error: You may need to download data.')
-            sys.exit()
+            elif os.path.exists(self.asdmname):
+                os.chdir(self.asdmname)
+
+                if os.path.exists(self.tarfilename):
+                    os.system('tar -xvf '+self.tarfilename)
+
+                elif os.path.exists(self.tarfilename+'.gz'):
+                    os.system('gzip -d '+self.tarfilename+'.gz')
+                    os.system('tar -xvf '+self.tarfilename)
+
+            else:
+                print('Error: You may need to download data.')
+                sys.exit()
 
         self.writelog('step0:OK')
 
@@ -116,20 +120,13 @@ class QSOanalysis():
 
     # step3: remove TARGET observations
     def remove_target(self,dryrun=False):
+        IntentListASDM = aU.getIntentsFromASDM(self.asdmfile)
 
-        listOfIntents_init = [
-            'CALIBRATE_BANDPASS#ON_SOURCE',
-            'CALIBRATE_FLUX#ON_SOURCE',
-            'CALIBRATE_PHASE#ON_SOURCE',
-            'CALIBRATE_WVR#AMBIENT',
-            'CALIBRATE_WVR#HOT',
-            'CALIBRATE_WVR#OFF_SOURCE',
-            'CALIBRATE_WVR#ON_SOURCE',
-            'CALIBRATE_ATMOSPHERE#OFF_SOURCE',
-            'CALIBRATE_ATMOSPHERE#AMBIENT',
-            'CALIBRATE_ATMOSPHERE#HOT',
-            'CALIBRATE_POINTING#ON_SOURCE'
-            ]
+        IntentList = []
+        for intfield in list(IntentListASDM):
+            IntentList = IntentList + IntentListASDM[intfield]
+
+        listOfIntents_init = (np.unique(IntentList)[np.unique(IntentList)!='OBSERVE_TARGET'])
 
         if not dryrun:
             os.system('mv '+self.visname+' '+self.visname+'.org')
@@ -137,7 +134,7 @@ class QSOanalysis():
                 'vis':self.visname+'.org',
                 'outputvis':self.visname,
                 'datacolumn':'all',
-                'intent':','.join(listOfIntents_init),
+                'intent':'*,'.join(listOfIntents_init)+'*',
                 'keepflags':True
                 }
 
@@ -166,8 +163,14 @@ class QSOanalysis():
         self.beamsize = aU.estimateSynthesizedBeam(self.visname+'.split')
         from casatools import synthesisutils
         su = synthesisutils()
-        self.imsize = su.getOptimumSize(int(100./self.beamsize*5))
-        #self.imsize = optImsize(int(100./self.beamsize*5))
+
+        if self.dish_diameter > 10.:
+            # 12m
+            self.imsize = su.getOptimumSize(int(100./self.beamsize*5))
+        else:
+            # 7m
+            self.imsize = su.getOptimumSize(int(150./self.beamsize*5))
+
         self.cell = '{:.3f}'.format(self.beamsize/5) + 'arcsec'
 
         self.writelog('step4:OK')
@@ -186,7 +189,7 @@ class QSOanalysis():
             'spw':spw,
             'field':field,
             'intent':'*ON_SOURCE*',
-            'keepflags':True,
+            'keepflags':False,
             'reindex':True,
             }
 
@@ -282,12 +285,12 @@ class QSOanalysis():
             f.write('   "field":"0",'+'\n')
             f.write('   "stokes":"I",'+'\n')
             f.write('   "pbeam":True,'+'\n')
-            f.write('   "dish_diameter":12.0,'+'\n')
+            f.write('   "dish_diameter":'+str(self.dish_diameter)+','+'\n')
             f.write('   "chanwidth":1,'+'\n')
             f.write('   "var":["0,0,p[0]"],'+'\n')
             f.write('   "p_ini":[1.0],'+'\n')
             f.write('   "model":["delta"],'+'\n')
-            f.write('   "OneFitPerChannel":'+str(mfsfit)+','+'\n')
+            f.write('   "OneFitPerChannel":'+str((not mfsfit))+','+'\n')
             f.write('   "write":"'+write+'",'+'\n')
             f.write('   "outfile":"./specdata/'+outfile+'",'+'\n')
             f.write('   }'+'\n')
@@ -391,6 +394,58 @@ class QSOanalysis():
                     plt.savefig('./caltables/'+caltablebase+'.gainplot.'+type+'.pdf')
                     plt.close()
 
+    # step5-7: uvfitting
+    def uvfit_man(self,intent=None,write_residuals=False,savemodel=False,dryrun=False):
+
+        if not dryrun:
+
+            os.system('mkdir -p specdata')
+
+            if intent == None:
+                outfile = self.visname+'.split.'+self.field+'.spw_'+self.spw+'.npy'
+            else:
+                outfile = self.visname+'.split.'+self.field+'.spw_'+self.spw+'.'+intent+'.npy'
+
+            from casatools import table
+            from scipy.optimize import least_squares
+            tb = table()
+
+            # freq
+            tb.open('calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw+'/SPECTRAL_WINDOW')
+            freq = tb.getcol('CHAN_FREQ').copy()
+            tb.close()
+
+            # spec
+            tb.open('calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw,nomodify=False)
+            data  = tb.getcol('DATA')
+
+            model = np.zeros_like(data)
+            def ch_fit(i):
+                y = data.copy()[:,i,:].reshape(data.shape[0]*data.shape[2])
+                x = np.zeros_like(y)
+                def wrap_res(param,t,v):
+                    return (v.real-param[0])**2 + v.imag**2
+                init_values = [1.0]
+                res = least_squares(wrap_res,init_values,args=(x,y))
+
+                model[:,i,:] = model[:,i,:] + res.x[0]
+
+                return res.x[0]
+
+            spec = [ch_fit(i) for i in range(data.shape[1])]
+            outdata = np.hstack([freq,np.array(spec).reshape([1,data.shape[1]])])
+            np.save(outfile,outdata)
+
+            if savemodel:
+                tb.putcol('MODEL_DATA',model.copy())
+
+            if write_residuals:
+                res   = data.copy() - model.copy()
+                tb.putcol('CORRECTED_DATA', res)
+
+            tb.flush()
+            tb.close()
+
     # step5: uvmultifit & selfcal
     def uvfit_run(self,allrun=False,spw=None,field=None,dryrun=False,plot=True):
 
@@ -400,6 +455,12 @@ class QSOanalysis():
 
                     self.uvfit_splitQSO(spw=_spw,field=_field,dryrun=dryrun)
                     self.uvfit_createcol(dryrun=dryrun)
+                    #self.uvfit_uvmultifit(write='model',column='data',intent='noselfcal',dryrun=dryrun,mfsfit=True)
+                    self.uvfit_man(write_residuals=True)
+
+                    #self.uvfit_uvmultifit(write='residuals',column='data',intent='noselfcal',dryrun=dryrun,mfsfit=True)
+
+                    '''
                     self.uvfit_uvmultifit(write='model',column='data',intent='noselfcal',dryrun=dryrun)
                     gaintable_p  = self.uvfit_gaincal(intent='phase_0',solint='int',gaintype='G',calmode='p',gaintable='',dryrun=dryrun)
                     gaintable_ap = self.uvfit_gaincal(intent='amp_phase_0',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p],dryrun=dryrun)
@@ -407,11 +468,11 @@ class QSOanalysis():
                     self.uvfit_uvmultifit(write='model',column='corrected',dryrun=dryrun)
                     gaintable_p1  = self.uvfit_gaincal(intent='phase_1',solint='int',gaintype='T',calmode='p',gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
                     gaintable_ap1 = self.uvfit_gaincal(intent='amp_phase_1',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p,gaintable_ap,gaintable_p1],dryrun=dryrun)
-                    #self.uvfit_applycal(gaintable=[gaintable_p,gaintable_p1],dryrun=dryrun)
-                    self.uvfit_uvmultifit(write='residuals',column='corrected',dryrun=dryrun)
+                    self.uvfit_uvmultifit(write='residuals',column='corrected',dryrun=dryrun,mfsfit=False,intent='mfs')
+                    '''
 
-            self.uvfit_gainplot(dryrun=(not plot),type='phase')
-            self.uvfit_gainplot(dryrun=(not plot),type='amp_phase')
+            #self.uvfit_gainplot(dryrun=(not plot),type='phase')
+            #self.uvfit_gainplot(dryrun=(not plot),type='amp_phase')
 
         else:
             if spw==None:
@@ -445,12 +506,29 @@ class QSOanalysis():
     # step6: continuum imaging
     def cont_imaging(self,field,dryrun=False):
 
+        os.system('rm -rf '+'./calibrated/concat.'+field+'.ms')
         vis = list( set(glob.glob('./calibrated/*.'+field+'.*')) ^ set(glob.glob('./calibrated/*.'+field+'.*.listobs')))
-        #vis = list( set(glob.glob('./calibrated/*'+field+'*all*')) ^ set(glob.glob('./calibrated/*'+field+'*all*listobs')))
 
+        kw_concat = {
+            'vis':vis,
+            'concatvis':'./calibrated/concat.'+field+'.ms'
+            }
+
+        from casatasks import concat
+        concat(**kw_concat)
+
+        kw_statwt = {
+            'vis':kw_concat['concatvis'],
+            'combine':'',
+            'datacolumn':'corrected',
+            'flagbackup':False,
+            }
+
+        from casatasks import statwt
+        statwt(**kw_statwt)
 
         kw_tclean = {
-            'vis':vis,
+            'vis':kw_concat['concatvis'], #vis,
             'imagename':'./imsg/'+self.asdmname+'.'+field+'.residual.allspw.selfcal.mfs.briggs.robust_0.5.dirty',
             'datacolumn':'corrected',
             'imsize':self.imsize,

@@ -11,7 +11,7 @@ importlib.reload(Lib)
 casacmdforuvfit = os.environ.get('CASA_FOR_UVFIT')
 args = sys.argv
 
-obj = Lib.QSOanalysis(tarfilename,casacmdforuvfit=casacmdforuvfit,spacesave=True)
+obj = Lib.QSOanalysis(tarfilename,casacmdforuvfit=casacmdforuvfit,spacesave=False)
 
 print('step:0')
 obj.intial_proc()

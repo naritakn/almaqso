@@ -29,6 +29,7 @@ def casa_f(num):
         cmdfile = 'exec_analysis.py'
 
         os.system('mkdir -p python_scripts')
+        os.system('mkdir -p log')
 
         f = open('./python_scripts/'+cmdfile.replace('.py','.'+tarfilename+'.py'),'w')
         f.write('tarfilename = "'+tarfilename+'"'+'\n')
@@ -37,8 +38,9 @@ def casa_f(num):
 
         cmd = '"' + 'execfile('+"'"+'./python_scripts/'+cmdfile.replace('.py','.'+tarfilename+'.py')+"'"+')' +'"'
         print('running: '+tarfilename)
-        os.system('touch ./log/'+tarfilename+'.log')
-        os.system('casa --nologger --nogui --nologfile -c '+cmd+' >> '+'./log/'+tarfilename+'.log')
+
+        os.system('touch ./log/'+tarfilename+'.term.log')
+        os.system('casa --nologger --nogui --logfile ./log/'+tarfilename+'.casa.log -c '+cmd+' >> '+'./log/'+tarfilename+'.term.log')
     else:
         print('dryrun: '+tarfilename)
 

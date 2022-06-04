@@ -8,6 +8,7 @@ args = sys.argv
 
 tarlist = glob.glob('*.tar')
 urllist = np.load(args[1])
+rmflag = np.load(args[2])
 
 exec_tarlist = []
 
@@ -15,6 +16,8 @@ for f in tarlist:
     dd = urllist[urllist[:,0]=='https://almascience.eso.org/dataPortal/'+f][:,1].astype('int') - os.path.getsize(f)
     if dd > 0:
         print(f+' '+str(dd/1024/1024/1024))
+        if rmflag == 'rm':
+            print('rm -rf '+f)
     else:
         exec_tarlist.append(f)
 
