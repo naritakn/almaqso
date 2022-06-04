@@ -8,6 +8,7 @@ args = sys.argv
 
 tarlist = glob.glob('*.tar')
 urllist = np.load(args[1])
+if not args[2] == None
 rmflag = str(args[2])
 
 exec_tarlist = []
