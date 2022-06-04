@@ -11,10 +11,6 @@ importlib.reload(Lib)
 casacmdforuvfit = sys.path.append(os.environ.get('CASA_FOR_UVFIT'))
 args = sys.argv
 
-tarfilename = args[1]
-if args[1] == None:
-    tarfilename = '2018.1.00850.S_uid___A002_Xd845af_X3ce8.asdm.sdm.tar'
-
 obj = Lib.QSOanalysis(tarfilename,casacmdforuvfit=casacmdforuvfit,spacesave=True)
 
 print('step:0')

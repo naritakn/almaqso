@@ -400,7 +400,7 @@ class QSOanalysis():
 
                     self.uvfit_splitQSO(spw=_spw,field=_field,dryrun=dryrun)
                     self.uvfit_createcol(dryrun=dryrun)
-                    self.uvfit_uvmultifit(write='model',column='data',dryrun=dryrun)
+                    self.uvfit_uvmultifit(write='model',column='data',intent='noselfcal',dryrun=dryrun)
                     gaintable_p  = self.uvfit_gaincal(intent='phase_0',solint='int',gaintype='G',calmode='p',gaintable='',dryrun=dryrun)
                     gaintable_ap = self.uvfit_gaincal(intent='amp_phase_0',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p],dryrun=dryrun)
                     self.uvfit_applycal(gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
