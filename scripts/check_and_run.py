@@ -8,7 +8,7 @@ args = sys.argv
 
 tarlist = glob.glob('*.tar')
 urllist = np.load(args[1])
-rmflag = np.load(args[2])
+rmflag = str(args[2])
 
 exec_tarlist = []
 
