@@ -8,7 +8,7 @@ sys.path.append('.')
 import Lib_casa_analysis as Lib
 importlib.reload(Lib)
 
-casacmdforuvfit = sys.path.append(os.environ.get('CASA_FOR_UVFIT'))
+casacmdforuvfit = os.environ.get('CASA_FOR_UVFIT')
 args = sys.argv
 
 obj = Lib.QSOanalysis(tarfilename,casacmdforuvfit=casacmdforuvfit,spacesave=True)
