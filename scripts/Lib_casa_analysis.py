@@ -396,7 +396,7 @@ class QSOanalysis():
                     plt.close()
 
     # step5-7: uvfitting
-    def uvfit_man(self,data='data',intent=None,write_residuals=False,savemodel=False,dryrun=False):
+    def uvfit_man(self,datacolumn='data',intent=None,write_residuals=False,savemodel=False,dryrun=False):
 
         if not dryrun:
 
@@ -459,11 +459,11 @@ class QSOanalysis():
                 tb.putcol('MODEL_DATA',model.copy())
 
             if write_residuals:
-                if data == 'data':
+                if datacolumn == 'data':
                     res   = data.copy() - model.copy()
-                elif data == 'corrected':
+                elif datacolumn == 'corrected':
                     corr_data = tb.getcol('CORRECTED_DATA')
-                    res == corr_data.copy() - model.copy()
+                    res = corr_data.copy() - model.copy()
                 tb.putcol('CORRECTED_DATA', res)
 
             tb.flush()
@@ -480,14 +480,14 @@ class QSOanalysis():
                     self.uvfit_createcol(dryrun=dryrun)
 
                     self.uvfit_uvmultifit(write='',column='data',intent='noselfcal',dryrun=dryrun,mfsfit=False)
-                    self.uvfit_man(data='data',write_residuals=False,savemodel=True,intent='noselfcal',dryrun=dryrun)
+                    self.uvfit_man(datacolumn='data',write_residuals=False,savemodel=True,intent='noselfcal',dryrun=dryrun)
 
                     gaintable_p  = self.uvfit_gaincal(intent='phase_0',solint='int',gaintype='G',calmode='p',gaintable='',dryrun=dryrun)
                     gaintable_ap = self.uvfit_gaincal(intent='amp_phase_0',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p],dryrun=dryrun)
                     self.uvfit_applycal(gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
 
                     self.uvfit_uvmultifit(write='',column='corrected',intent='selfcal',dryrun=dryrun,mfsfit=False)
-                    self.uvfit_man(data='corrected',write_residuals=True,savemodel=True,intent='selfcal',dryrun=dryrun)
+                    self.uvfit_man(datacolumn='corrected',write_residuals=True,savemodel=True,intent='selfcal',dryrun=dryrun)
 
                     gaintable_p1  = self.uvfit_gaincal(intent='phase_1',solint='int',gaintype='T',calmode='p',gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
                     gaintable_ap1 = self.uvfit_gaincal(intent='amp_phase_1',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p,gaintable_ap,gaintable_p1],dryrun=dryrun)

@@ -16,7 +16,7 @@ def init_logger():
     logger.setLevel(INFO)
 
 class QSOquery:
-    def __init__(self,sname,band='4',almaurl='https://almascience.nao.ac.jp',download_d='./',replaceNAOJ=False):
+    def __init__(self,sname,band='4',almaurl='https://almascience.nao.ac.jp',download_d='./',replaceNAOJ=False,only12m=False):
         self.sname = sname
         self.band = band
         self.almaurl = almaurl
@@ -24,18 +24,31 @@ class QSOquery:
         self.myAlma.archive_url = almaurl
         self.download_d = download_d
         self.replaceNAOJ=replaceNAOJ
+        self.only12m = only12m
 
     def queryALMA(self,almaquery=True):
         service = pyvo.dal.TAPService(self.almaurl+"/tap")
+
         query = f"""
                 SELECT *
                 FROM ivoa.obscore
                 WHERE target_name = '{self.sname}'  AND band_list = '{self.band}' AND data_rights = 'Public' """
 
         if almaquery:
-            return self.myAlma.query_tap(query).to_table().to_pandas()
+            if only12m:
+                tmp = self.myAlma.query_tap(query).to_table().to_pandas()
+                flag = [('DV' in tmp['antenna_arrays'][i]) or ('DA' in tmp['antenna_arrays'][i]) for i in range(len(tmp))]
+                return tmp[flag]
+            else:
+                return self.myAlma.query_tap(query).to_table().to_pandas()
+
         else:
-            return service.search(query).to_table().to_pandas()
+            if only12m:
+                tmp = service.search(query).to_table().to_pandas()
+                flag = [('DV' in tmp['antenna_arrays'][i]) or ('DA' in tmp['antenna_arrays'][i]) for i in range(len(tmp))]
+                return tmp[flag]
+            else:
+                return service.search(query).to_table().to_pandas()
 
     def get_data_urls(self,almaquery=True):
         rlist = self.queryALMA(almaquery=almaquery)
