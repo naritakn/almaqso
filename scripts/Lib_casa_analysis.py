@@ -175,6 +175,19 @@ class QSOanalysis():
 
         self.writelog('step4:OK')
 
+    def init_spacesave(self,dryrun=False):
+
+        if not dryrun:
+            if self.spacesave:
+                os.system('rm -rf '+self.visname)
+                os.system('rm -rf '+self.visname+'.org')
+                os.system('rm -rf '+self.visname+'.flagversions')
+                os.system('rm -rf '+self.visname+'.tsys')
+                os.system('rm -rf '+self.visname+'.wvr*')
+                os.system('rm -rf '+self.visname+'.*.png')
+                os.system('rm -rf '+self.visname+'.split.*')
+                os.system('rm *.asdm.sdm')
+                os.system('rm -rf '+self.projID)
 
     # step5-1: split calibrator observations
     def uvfit_splitQSO(self,spw,field,dryrun=False):

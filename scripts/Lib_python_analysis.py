@@ -16,7 +16,7 @@ def init_logger():
     logger.setLevel(INFO)
 
 class QSOquery:
-    def __init__(self,sname,band='4',almaurl='https://almascience.nao.ac.jp',download_d='./',replaceNAOJ=False,only12m=False):
+    def __init__(self,sname,band='4',almaurl='https://almascience.nao.ac.jp',download_d='./',replaceNAOJ=False,only12m=False,onlyFDM=False):
         self.sname = sname
         self.band = band
         self.almaurl = almaurl
@@ -25,6 +25,7 @@ class QSOquery:
         self.download_d = download_d
         self.replaceNAOJ=replaceNAOJ
         self.only12m = only12m
+        self.onlyFDM = onlyFDM
 
     def queryALMA(self,almaquery=True):
         service = pyvo.dal.TAPService(self.almaurl+"/tap")
@@ -35,20 +36,34 @@ class QSOquery:
                 WHERE target_name = '{self.sname}'  AND band_list = '{self.band}' AND data_rights = 'Public' """
 
         if almaquery:
-            if only12m:
-                tmp = self.myAlma.query_tap(query).to_table().to_pandas()
+            tmp = self.myAlma.query_tap(query).to_table().to_pandas()
+            if self.only12m:
                 flag = [('DV' in tmp['antenna_arrays'][i]) or ('DA' in tmp['antenna_arrays'][i]) for i in range(len(tmp))]
-                return tmp[flag]
+
+                if self.onlyFDM:
+                    return tmp[flag][tmp[flag]['velocity_resolution'] < 50000]
+                else:
+                    return tmp[flag]
             else:
-                return self.myAlma.query_tap(query).to_table().to_pandas()
+                if self.onlyFDM:
+                    return tmp[tmp['velocity_resolution'] < 50000]
+                else:
+                    return tmp
 
         else:
-            if only12m:
-                tmp = service.search(query).to_table().to_pandas()
+            tmp = service.search(query).to_table().to_pandas()
+            if self.only12m:
                 flag = [('DV' in tmp['antenna_arrays'][i]) or ('DA' in tmp['antenna_arrays'][i]) for i in range(len(tmp))]
-                return tmp[flag]
+
+                if self.onlyFDM:
+                    return tmp[flag][tmp[flag]['velocity_resolution'] < 50000]
+                else:
+                    return tmp[flag]
             else:
-                return service.search(query).to_table().to_pandas()
+                if self.onlyFDM:
+                    return tmp[tmp['velocity_resolution'] < 50000]
+                else:
+                    return tmp
 
     def get_data_urls(self,almaquery=True):
         rlist = self.queryALMA(almaquery=almaquery)
@@ -61,7 +76,7 @@ class QSOquery:
 
             url_size = [[url,size] for (url,size) in zip(uid_url_table['access_url'],uid_url_table['content_length']) if '.asdm.sdm.tar' in url]
             if not url_size == []:
-                asdm_size = (np.array(url_size)[:,1].astype('float')).sum()/1.e9
+                asdm_size = (np.array(url_size)[:,1].astype('float')).sum()/1024./1024./1024.
 
                 url_list = np.vstack([url_list,np.array(url_size)])
                 print('['+str(id+1)+'/'+str(len(mous_list))+'] '+str(asdm_size))
