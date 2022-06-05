@@ -11,7 +11,7 @@ importlib.reload(Lib)
 casacmdforuvfit = os.environ.get('CASA_FOR_UVFIT')
 args = sys.argv
 
-obj = Lib.QSOanalysis(tarfilename,casacmdforuvfit=casacmdforuvfit,spacesave=False)
+obj = Lib.QSOanalysis(tarfilename,casacmdforuvfit=casacmdforuvfit,spacesave=True)
 
 print('step:0')
 obj.intial_proc()
@@ -27,7 +27,7 @@ print('step:5')
 obj.uvfit_run(allrun=True,plot=True)
 print('step:6')
 for field in obj.fields:
-    obj.cont_imaging(field)
+    obj.cont_imaging(field,statwtflag=True)
 
 print('step:7')
 obj.spacesaving(gzip=True,dryrun=False)
