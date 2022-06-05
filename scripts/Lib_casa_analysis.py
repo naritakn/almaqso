@@ -351,7 +351,7 @@ class QSOanalysis():
                 'flagbackup':False,
                 'applymode':'calflag',
                 'gaintable':gaintable,
-                'calwt':False,
+                'calwt':True,
                 }
 
             from casatasks import applycal
@@ -409,7 +409,7 @@ class QSOanalysis():
                     plt.close()
 
     # step5-7: uvfitting
-    def uvfit_man(self,datacolumn='data',intent=None,write_residuals=False,savemodel=False,dryrun=False):
+    def uvfit_man(self,datacolumn='data',intent=None,write_residuals=False,savemodel=False,dryrun=False,meansub=False):
 
         if not dryrun:
 
@@ -421,7 +421,7 @@ class QSOanalysis():
                 infile = './specdata/'+self.visname+'.split.'+self.field+'.spw_'+self.spw+'.'+intent+'.dat'
 
             from casatools import table
-            from scipy.optimize import least_squares
+            #from scipy.optimize import least_squares
             tb = table()
 
             # freq
@@ -457,23 +457,26 @@ class QSOanalysis():
 
             modeldata = np.loadtxt(infile)
             if np.argsort(freq)[0] == np.argsort(modeldata[:,0])[0]:
-                spec = modeldata[:,1]
-            '''
+                spec = modeldata.copy()[:,1]
+
             elif np.argsort(freq)[0] == 0:
-                spec = modeldata[:,1][np.argsort(modeldata[:,0])]
+                spec = modeldata.copy()[:,1][np.argsort(modeldata[:,0])]
             elif np.argsort(modeldata[:,0])[0] == 0:
-                spec = modeldata[:,1][np.argsort(freq)]
-            '''
-            for i in range(data.shape[2]):
-                model[0,:,i] = model[0,:,i] + spec.astype('complex')
-                model[1,:,i] = model[1,:,i] + spec.astype('complex')
+                spec = modeldata.copy()[:,1][np.argsort(freq)]
+
+            if meansub:
+                model = model + (np.mean(spec) + 0.*1j)
+            else:
+                for i in range(data.shape[2]):
+                    model[0,:,i] = model[0,:,i] + spec.astype('complex')
+                    model[1,:,i] = model[1,:,i] + spec.astype('complex')
 
             if savemodel:
                 tb.putcol('MODEL_DATA',model.copy())
 
             if write_residuals:
                 if datacolumn == 'data':
-                    res   = data.copy() - model.copy()
+                    res = data.copy() - model.copy()
                 elif datacolumn == 'corrected':
                     corr_data = tb.getcol('CORRECTED_DATA')
                     res = corr_data.copy() - model.copy()
@@ -492,15 +495,15 @@ class QSOanalysis():
                     self.uvfit_splitQSO(spw=_spw,field=_field,dryrun=dryrun)
                     self.uvfit_createcol(dryrun=dryrun)
 
-                    self.uvfit_uvmultifit(write='',column='data',intent='noselfcal',dryrun=dryrun,mfsfit=False)
-                    self.uvfit_man(datacolumn='data',write_residuals=False,savemodel=True,intent='noselfcal',dryrun=dryrun)
+                    self.uvfit_uvmultifit(write='model',column='data',intent='noselfcal',dryrun=dryrun,mfsfit=False)
+                    self.uvfit_man(datacolumn='data',write_residuals=False,savemodel=True,intent='noselfcal',dryrun=dryrun,meansub=True)
 
                     gaintable_p  = self.uvfit_gaincal(intent='phase_0',solint='int',gaintype='G',calmode='p',gaintable='',dryrun=dryrun)
                     gaintable_ap = self.uvfit_gaincal(intent='amp_phase_0',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p],dryrun=dryrun)
                     self.uvfit_applycal(gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
 
                     self.uvfit_uvmultifit(write='',column='corrected',intent='selfcal',dryrun=dryrun,mfsfit=False)
-                    self.uvfit_man(datacolumn='corrected',write_residuals=True,savemodel=True,intent='selfcal',dryrun=dryrun)
+                    self.uvfit_man(datacolumn='corrected',write_residuals=True,savemodel=True,intent='selfcal',dryrun=dryrun,meansub=True)
 
                     gaintable_p1  = self.uvfit_gaincal(intent='phase_1',solint='int',gaintype='T',calmode='p',gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
                     gaintable_ap1 = self.uvfit_gaincal(intent='amp_phase_1',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p,gaintable_ap,gaintable_p1],dryrun=dryrun)
@@ -580,7 +583,7 @@ class QSOanalysis():
                 'deconvolver':'hogbom',
                 'gridder':'standard',
                 'specmode':'mfs',
-                'threshold':'10mJy',
+                'threshold':'0mJy',
                 'niter':0,
                 'nterms':2,
                 'interactive':False,

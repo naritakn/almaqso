@@ -28,7 +28,7 @@ print('step:5')
 obj.uvfit_run(allrun=True,plot=True)
 print('step:6')
 for field in obj.fields:
-    obj.cont_imaging(field,statwtflag=True)
+    obj.cont_imaging(field,statwtflag=False)
 
 print('step:7')
 obj.spacesaving(gzip=True,dryrun=False)
