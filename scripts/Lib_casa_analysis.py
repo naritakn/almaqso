@@ -359,9 +359,9 @@ class QSOanalysis():
                 'vis':'calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw,
                 'interp':'linear',
                 'flagbackup':False,
-                'applymode':'calonly',
+                'applymode':'calflag',
                 'gaintable':gaintable,
-                'calwt':True,
+                'calwt':False,
                 }
 
             from casatasks import applycal
