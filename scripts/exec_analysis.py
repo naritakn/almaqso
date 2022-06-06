@@ -25,10 +25,11 @@ print('step:4')
 obj.doCalib()
 obj.init_spacesave()
 print('step:5')
-obj.uvfit_run(allrun=True,plot=True)
+obj.uvfit_run(plot=True)
 print('step:6')
-for field in obj.fields:
-    obj.cont_imaging(field,statwtflag=False)
-
+obj.cont_imaging(statwtflag=False)
 print('step:7')
-obj.spacesaving(gzip=True,dryrun=False)
+obj.spacesaving(gzip=True)
+
+print('step:8')
+obj.specplot()

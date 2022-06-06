@@ -225,28 +225,30 @@ class QSOanalysis():
             'outputvis':'calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw+'.tmp',
             'datacolumn':'corrected',
             'spw':','.join(self.spws),
-            #'combinespws':False,
             'width':10000,
             'field':field,
             'intent':'*ON_SOURCE*',
-            'keepflags':True,
-            #'reindex':True,
+            'keepflags':False,
             }
 
         kw_mstransform = {
             'vis':kw_split['outputvis'],
+            'outputvis':'calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw+'.tmp2',
+            'datacolumn':'all',
+            'combinespws':True,
+            'field':field,
+            'keepflags':False,
+            'reindex':True,
+            }
+
+        kw_split2 = {
+            'vis':kw_mstransform['outputvis'],
             'outputvis':'calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw,
             'datacolumn':'all',
-            #'spw':','.join(self.spws),
-            'combinespws':True,
-            'regridms':True,
-            'start':0,
-            'nchan':1,
-            'width':len(self.spws),
+            'width':10000,
             'field':field,
-            #'intent':'*ON_SOURCE*',
-            'keepflags':True,
-            'reindex':True,
+            'intent':'*ON_SOURCE*',
+            'keepflags':False,
             }
 
         if not dryrun:
@@ -255,13 +257,21 @@ class QSOanalysis():
             os.system('rm -rf '+kw_split['outputvis']+'.listobs')
             os.system('rm -rf '+kw_mstransform['outputvis'])
             os.system('rm -rf '+kw_mstransform['outputvis']+'.listobs')
+            os.system('rm -rf '+kw_split2['outputvis'])
+            os.system('rm -rf '+kw_split2['outputvis']+'.listobs')
 
             from casatasks import split,listobs,mstransform
             split(**kw_split)
             listobs(vis=kw_split['outputvis'],listfile=kw_split['outputvis']+'.listobs')
             mstransform(**kw_mstransform)
-            os.system('rm -rf '+kw_split['outputvis'])
             listobs(vis=kw_mstransform['outputvis'],listfile=kw_mstransform['outputvis']+'.listobs')
+            split(**kw_split2)
+            listobs(vis=kw_split2['outputvis'],listfile=kw_split2['outputvis']+'.listobs')
+
+            os.system('rm -rf '+kw_split['outputvis'])
+            os.system('rm -rf '+kw_split['outputvis']+'.listobs')
+            os.system('rm -rf '+kw_mstransform['outputvis'])
+            os.system('rm -rf '+kw_mstransform['outputvis']+'.listobs')
 
 
     # step5-2: create model column
@@ -349,7 +359,7 @@ class QSOanalysis():
                 'vis':'calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw,
                 'interp':'linear',
                 'flagbackup':False,
-                'applymode':'calflag',
+                'applymode':'calonly',
                 'gaintable':gaintable,
                 'calwt':True,
                 }
@@ -358,15 +368,18 @@ class QSOanalysis():
             applycal(**kw_applycal)
 
     # step5-6: gainplot
-    def uvfit_gainplot(self,type='amp_phase',dryrun=False):
+    def uvfit_gainplot(self,type='amp_phase',dryrun=False,allspws=False):
 
         if not dryrun:
             from casatools import table
             tb = table()
             import matplotlib.pyplot as plt
 
-            for field in self.fields:
-                for spw in self.spws:
+            if allspws:
+                for field in self.fields:
+
+                    spw = 'all'
+
                     caltablebase = self.asdmname+'.ms.split.'+field+'.spw_'+spw
                     caltable0 = './caltables/' + caltablebase + '.'+type+'_0'
                     caltable1 = './caltables/' + caltablebase + '.'+type+'_1'
@@ -408,6 +421,51 @@ class QSOanalysis():
                     plt.savefig('./caltables/'+caltablebase+'.gainplot.'+type+'.pdf')
                     plt.close()
 
+            else:
+
+                for field in self.fields:
+                    for spw in self.spws:
+                        caltablebase = self.asdmname+'.ms.split.'+field+'.spw_'+spw
+                        caltable0 = './caltables/' + caltablebase + '.'+type+'_0'
+                        caltable1 = './caltables/' + caltablebase + '.'+type+'_1'
+
+                        tb.open(caltable0)
+                        Time0  = tb.getcol('TIME').copy()
+                        cgain0 = tb.getcol('CPARAM').copy()
+                        ant0   = tb.getcol('ANTENNA1') .copy()
+                        tb.close()
+
+                        tb.open(caltable1)
+                        Time1  = tb.getcol('TIME').copy()
+                        cgain1 = tb.getcol('CPARAM').copy()
+                        ant1   = tb.getcol('ANTENNA1') .copy()
+                        tb.close()
+
+                        if type == 'phase':
+                            phase0_0 = np.angle(cgain0[0][0],deg=True)
+                            phase0_1 = np.angle(cgain0[1][0],deg=True)
+                            phase1   = np.angle(cgain1[0][0],deg=True)
+                        elif type == 'amp_phase':
+                            phase0_0 = np.abs(cgain0[0][0])
+                            phase1   = np.abs(cgain1[0][0])
+
+
+                        plt.close()
+                        titlename = self.asdmname+' '+field+' spw:'+spw
+                        plt.title(titlename)
+                        plt.scatter((Time0-Time0[0])/60.,phase0_0,c='b',s=2)
+                        if type == 'phase':
+                            plt.scatter((Time0-Time0[0])/60.,phase0_1,c='b',s=2)
+                        plt.scatter((Time1-Time1[0])/60.,phase1,c='r',s=1)
+                        plt.xlabel('Time from the first integration [min]')
+                        if type == 'phase':
+                            plt.ylabel('Gain phase [deg]')
+                        elif type == 'amp_phase':
+                            plt.ylabel('Gain amplitude')
+                        plt.savefig('./caltables/'+caltablebase+'.gainplot.'+type+'.png')
+                        plt.savefig('./caltables/'+caltablebase+'.gainplot.'+type+'.pdf')
+                        plt.close()
+
     # step5-7: uvfitting
     def uvfit_man(self,datacolumn='data',intent=None,write_residuals=False,savemodel=False,dryrun=False,meansub=False):
 
@@ -435,34 +493,18 @@ class QSOanalysis():
             data  = tb.getcol('DATA')
             model = np.zeros_like(data,dtype='complex')
 
-            '''
-            y = data.copy()
-            x = np.zeros_like(y)
-            def wrap_res(param,t,v):
-                res0 = np.array([((v[0,:,i].real-param)**2 + v[0,:,i].imag**2) for i in range(data.shape[2])]).sum()
-                res1 = np.array([((v[1,:,i].real-param)**2 + v[1,:,i].imag**2) for i in range(data.shape[2])]).sum()
-                return res0 + res1
-            init_values = np.zeros(data.shape[1]) + 1.0
-            res = least_squares(wrap_res,init_values,args=(x,y))
-
-            for i in range(data.shape[0]):
-                print(i)
-                model[:,i,:] = model[:,i,:] + res.x[i]
-
-
-            spec = np.array(res.x)
-            outdata = np.hstack([freq,np.array(spec).reshape([1,data.shape[1]])])
-            np.save(outfile,outdata)
-            '''
-
             modeldata = np.loadtxt(infile)
-            if np.argsort(freq)[0] == np.argsort(modeldata[:,0])[0]:
-                spec = modeldata.copy()[:,1]
+            if modeldata.shape[0] <= 4:
+                spec = np.zeros(1) + modeldata[1]
 
-            elif np.argsort(freq)[0] == 0:
-                spec = modeldata.copy()[:,1][np.argsort(modeldata[:,0])]
-            elif np.argsort(modeldata[:,0])[0] == 0:
-                spec = modeldata.copy()[:,1][np.argsort(freq)]
+            else:
+                if np.argsort(freq)[0] == np.argsort(modeldata[:,0])[0]:
+                    spec = modeldata.copy()[:,1]
+
+                elif np.argsort(freq)[0] == 0:
+                    spec = modeldata.copy()[:,1][np.argsort(modeldata[:,0])]
+                elif np.argsort(modeldata[:,0])[0] == 0:
+                    spec = modeldata.copy()[:,1][np.argsort(freq)]
 
             if meansub:
                 model = model + (np.mean(spec) + 0.*1j)
@@ -486,120 +528,96 @@ class QSOanalysis():
             tb.close()
 
     # step5: uvmultifit & selfcal
-    def uvfit_run(self,allrun=False,spw=None,field=None,dryrun=False,plot=True):
+    def uvfit_run(self,dryrun=False,plot=True):
 
-        if allrun:
+        if not dryrun:
             for _field in self.fields:
-                for _spw in self.spws:
-
-                    self.uvfit_splitQSO(spw=_spw,field=_field,dryrun=dryrun)
-                    self.uvfit_createcol(dryrun=dryrun)
-
-                    self.uvfit_uvmultifit(write='model',column='data',intent='noselfcal',dryrun=dryrun,mfsfit=False)
-                    self.uvfit_man(datacolumn='data',write_residuals=False,savemodel=True,intent='noselfcal',dryrun=dryrun,meansub=True)
-
-                    gaintable_p  = self.uvfit_gaincal(intent='phase_0',solint='int',gaintype='G',calmode='p',gaintable='',dryrun=dryrun)
-                    gaintable_ap = self.uvfit_gaincal(intent='amp_phase_0',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p],dryrun=dryrun)
-                    self.uvfit_applycal(gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
-
-                    self.uvfit_uvmultifit(write='',column='corrected',intent='selfcal',dryrun=dryrun,mfsfit=False)
-                    self.uvfit_man(datacolumn='corrected',write_residuals=True,savemodel=True,intent='selfcal',dryrun=dryrun,meansub=True)
-
-                    gaintable_p1  = self.uvfit_gaincal(intent='phase_1',solint='int',gaintype='T',calmode='p',gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
-                    gaintable_ap1 = self.uvfit_gaincal(intent='amp_phase_1',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p,gaintable_ap,gaintable_p1],dryrun=dryrun)
-
-            self.uvfit_gainplot(dryrun=(not plot),type='phase')
-            self.uvfit_gainplot(dryrun=(not plot),type='amp_phase')
-
-        else:
-            if spw==None:
-                print('Error: You need to specify spw.')
-
-            elif field==None:
-                print('Error: You need to specify field.')
-
-            else:
-
-                self.uvfit_splitQSO_allspw(field=field,dryrun=dryrun)
+                # selfcal by avaraged MS
+                self.uvfit_splitQSO_allspw(field=_field,dryrun=dryrun)
                 self.uvfit_createcol(dryrun=dryrun)
-                self.uvfit_uvmultifit(write='residuals',column='data',dryrun=dryrun,mfsfit=True)
-                self.uvfit_gainplot(dryrun=(not plot))
-                '''
-                self.uvfit_splitQSO(spw=spw,field=field,dryrun=dryrun)
-                self.uvfit_createcol(dryrun=dryrun)
-                self.uvfit_uvmultifit(write='model',column='data',dryrun=dryrun)
+                self.uvfit_uvmultifit(write='',column='data',dryrun=dryrun,mfsfit=True,intent='noselfcal')
+                self.uvfit_man(datacolumn='data',write_residuals=False,savemodel=True,intent='noselfcal',dryrun=dryrun,meansub=False)
+
                 gaintable_p  = self.uvfit_gaincal(intent='phase_0',solint='int',gaintype='G',calmode='p',gaintable='',dryrun=dryrun)
-                gaintable_ap = self.uvfit_gaincal(intent='amp_phase_0',solint='int',gaintype='T',solnorm=True,calmode='ap',gaintable=[gaintable_p],dryrun=dryrun)
+                gaintable_ap = self.uvfit_gaincal(intent='amp_phase_0',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p],dryrun=dryrun)
                 self.uvfit_applycal(gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
-                self.uvfit_uvmultifit(write='model',column='corrected',dryrun=dryrun)
+
+                self.uvfit_uvmultifit(write='',column='corrected',intent='selfcal',dryrun=dryrun,mfsfit=True)
+                self.uvfit_man(datacolumn='corrected',write_residuals=True,savemodel=True,intent='selfcal',dryrun=dryrun,meansub=False)
+
                 gaintable_p1  = self.uvfit_gaincal(intent='phase_1',solint='int',gaintype='T',calmode='p',gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
-                gaintable_ap1 = self.uvfit_gaincal(intent='amp_phase_1',solint='int',gaintype='T',solnorm=True,calmode='ap',gaintable=[gaintable_p,gaintable_ap,gaintable_p1],dryrun=dryrun)
-                self.uvfit_applycal(gaintable=[gaintable_p,gaintable_ap,gaintable_p1,gaintable_ap1],dryrun=dryrun)
-                self.uvfit_uvmultifit(write='residuals',column='corrected',dryrun=dryrun)
-                '''
+                gaintable_ap1 = self.uvfit_gaincal(intent='amp_phase_1',solint='int',solnorm=True,gaintype='T',calmode='ap',gaintable=[gaintable_p,gaintable_ap,gaintable_p1],dryrun=dryrun)
+
+                # apply gaintable to each spw
+                for _spw in self.spws:
+                    self.uvfit_splitQSO(spw=_spw,field=_field,dryrun=dryrun)
+                    self.uvfit_uvmultifit(write='',column='data',intent='noselfcal',dryrun=dryrun,mfsfit=False)
+                    self.uvfit_applycal(gaintable=[gaintable_p,gaintable_ap],dryrun=dryrun)
+                    self.uvfit_uvmultifit(write='',column='corrected',intent='selfcal',dryrun=dryrun,mfsfit=False)
+                    if self.spacesave:
+                        os.system('rm -rf calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw+'*')
+
+            self.uvfit_gainplot(dryrun=(not plot),allspws=True,type='phase')
+            self.uvfit_gainplot(dryrun=(not plot),allspws=True,type='amp_phase')
 
         self.writelog('step5:OK')
 
     # step6: continuum imaging
-    def cont_imaging(self,field,statwtflag=False,dryrun=False):
+    def cont_imaging(self,statwtflag=False,dryrun=False):
 
         if not dryrun:
 
-            os.system('rm -rf '+'./calibrated/concat.'+field+'.ms')
-            vis = list( set(glob.glob('./calibrated/*.'+field+'.*')) ^ set(glob.glob('./calibrated/*.'+field+'.*.listobs')))
+            for field in self.fields:
+                os.system('rm -rf '+'./calibrated/concat.'+field+'.ms')
+                vis = 'calibrated/'+self.visname+'.split.'+field+'.spw_all'
 
-            if statwtflag:
-                kw_concat = {
-                    'vis':vis,
-                    'concatvis':'./calibrated/concat.'+field+'.ms'
-                    }
+                if statwtflag:
 
-                from casatasks import concat
-                concat(**kw_concat)
+                    kw_statwt = {
+                        'vis':vis,
+                        'combine':'',
+                        'datacolumn':'corrected',
+                        'flagbackup':False,
+                        }
 
-                kw_statwt = {
-                    'vis':kw_concat['concatvis'],
-                    'combine':'',
+                    from casatasks import statwt
+                    statwt(**kw_statwt)
+
+                    visForimsg = kw_concat['concatvis']
+
+                else:
+                    visForimsg = vis
+
+                kw_tclean = {
+                    'vis':visForimsg, #vis,
+                    'imagename':'./imsg/'+self.asdmname+'.'+field+'.residual.allspw.selfcal.mfs.briggs.robust_0.5.dirty',
                     'datacolumn':'corrected',
-                    'flagbackup':False,
+                    'imsize':self.imsize,
+                    'cell':self.cell,
+                    'weighting':'briggs',
+                    'robust':0.5,
+                    'deconvolver':'hogbom',
+                    'gridder':'standard',
+                    'specmode':'mfs',
+                    'threshold':'0mJy',
+                    'niter':0,
+                    'nterms':2,
+                    'interactive':False,
+                    'pbcor':True,
+                    'restoringbeam':'common',
                     }
 
-                from casatasks import statwt
-                statwt(**kw_statwt)
+                os.system('mkdir -p imsg')
+                os.system('rm -rf '+kw_tclean['imagename']+'*')
+                from casatasks import tclean, exportfits
+                tclean(**kw_tclean)
+                exportfits(kw_tclean['imagename']+'.image',kw_tclean['imagename']+'.image.fits')
+                exportfits(kw_tclean['imagename']+'.image.pbcor',kw_tclean['imagename']+'.image.pbcor.fits')
+                exportfits(kw_tclean['imagename']+'.psf',kw_tclean['imagename']+'.psf.fits')
 
-                visForimsg = kw_concat['concatvis']
 
-            else:
-                visForimsg = vis
-
-            kw_tclean = {
-                'vis':visForimsg, #vis,
-                'imagename':'./imsg/'+self.asdmname+'.'+field+'.residual.allspw.selfcal.mfs.briggs.robust_0.5.dirty',
-                'datacolumn':'corrected',
-                'imsize':self.imsize,
-                'cell':self.cell,
-                'weighting':'briggs',
-                'robust':0.5,
-                'deconvolver':'hogbom',
-                'gridder':'standard',
-                'specmode':'mfs',
-                'threshold':'0mJy',
-                'niter':0,
-                'nterms':2,
-                'interactive':False,
-                'pbcor':True,
-                'restoringbeam':'common',
-                }
-
-            os.system('mkdir -p imsg')
-            os.system('rm -rf '+kw_tclean['imagename']+'*')
-            from casatasks import tclean, exportfits
-            tclean(**kw_tclean)
-            exportfits(kw_tclean['imagename']+'.image',kw_tclean['imagename']+'.image.fits')
-            exportfits(kw_tclean['imagename']+'.image.pbcor',kw_tclean['imagename']+'.image.pbcor.fits')
-
-            for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
-                os.system('rm -rf '+kw_tclean['imagename']+ext)
+                for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
+                    os.system('rm -rf '+kw_tclean['imagename']+ext)
 
         self.writelog('step6:OK')
 
@@ -610,36 +628,89 @@ class QSOanalysis():
             if self.spacesave:
                 os.system('rm -rf *.last')
                 os.system('rm -rf byspw')
-                try:
-                    os.system('mkdir -p log')
-                    os.system('mv ./calibrated/*.listobs ./log/')
-                except:
-                    print('ERROR: copy listobs failed')
+                os.system('rm -rf tempfiles')
+                os.system('rm -rf '+self.asdmname+'*')
+                os.system('rm -rf '+self.projID)
+
+                from casatasks import mstransform,listobs
+                for field in  self.fields:
+                    kw_mstransform = {
+                        'vis':'calibrated/'+self.visname+'.split.'+field+'.spw_all',
+                        'outputvis':'calibrated/'+self.visname+'.split.'+field+'.spw_all.selfcal.residual',
+                        'datacolumn':'corrected',
+                        'keepflags':True
+                        }
+
+                    os.system('rm -rf '+kw_mstransform['outputvis'])
+                    mstransform(**kw_mstransform)
+                    listobs(vis=kw_mstransform['outputvis'],listfile=kw_mstransform['outputvis']+'.listobs')
+                    os.system('rm -rf '+kw_mstransform['vis'])
+                    os.system('rm -rf '+kw_mstransform['vis']+'.listobs')
 
                 try:
                     os.system('mkdir -p log')
                     os.system('mv ./casa-*.log ./log/')
+                    os.system('cp ./calibrated/*.listobs ./log/')
                 except:
                     print('ERRPR: copy casalog failed')
 
-                try:
-                    os.system('mkdir -p log')
-                    os.system('mkdir -p log/caltables')
-                    os.system('mv ./caltables/*.pdf ./log/caltables/')
-                    os.system('mv ./caltables/*.png ./log/caltables/')
-                except:
-                    print('ERROR: copy caltables failed')
-
-                os.system('rm -rf calibrated')
-                os.system('rm -rf caltables')
-                os.system('rm -rf '+self.asdmname+'*')
-                os.system('rm -rf '+self.projID)
+                os.system('mv ../log/'+self.tarfilename+'*.log ./log/')
 
                 if gzip:
                     os.system('gzip -1 -v '+glob.glob('*.tar')[0])
+                    os.system('tar -zcvf calibrated.tar.gz calibrated')
+                    os.system('rm -rf ./calibrated')
+
 
         self.writelog('step7:OK')
 
+
+    # step8: spectrum plot
+    def specplot(self,dryrun=False):
+
+        if not dryrun:
+            from astropy import stats
+            import matplotlib.pyplot as plt
+
+            for field in self.fields:
+                for spw in self.spws:
+                    specfile = './specdata/'+self.visname+'.split.'+field+'.spw_'+spw+'.selfcal.dat'
+                    data = np.loadtxt(specfile)
+                    freq = data[:,0]/1.0e9 #GHz
+                    spec = data[:,1] #Jy
+                    spec_ma = stats.sigma_clip(spec,sigma=3.)
+
+                    pp = np.ma.polyfit(freq,spec_ma,deg=1)
+                    #cont = np.ma.median(spec_ma)
+                    cont = pp[0]*freq+pp[1]
+                    rms = np.ma.std(spec_ma/cont)
+                    detect = np.ma.array(np.full_like(freq,np.ma.max(spec_ma/cont)+2.5*rms),mask=~spec_ma.mask)
+
+                    ymax = np.max(spec/cont) + 5*rms
+                    ymin = np.min(spec/cont) - 5*rms
+
+                    plt.close()
+                    plt.rcParams['font.family'] = 'Times New Roman'
+                    plt.rcParams['mathtext.fontset'] = 'stix'
+                    plt.rcParams["figure.dpi"] = 200
+                    plt.rcParams["font.size"] = 20
+
+                    plt.figure(figsize=[10,8])
+                    #plt.gca().xaxis.set_major_formatter(plt.FormatStrFormatter('%.3f'))
+
+                    plt.step(freq,spec/cont,where='mid',c='b',lw=1)
+                    plt.plot(freq,detect,'r-',lw=5)
+                    plt.xlabel('frequency [GHz]')
+                    plt.ylabel('line/continuum')
+                    titlename = self.asdmname + ': ' + field + ' spw' + spw
+                    plt.title(titlename)
+                    os.system('mkdir -p specplot')
+                    plt.ylim(ymin,ymax)
+                    plt.savefig('./specplot/'+self.asdmname + '.' + field + '.spw' + spw + '.pdf')
+                    plt.savefig('./specplot/'+self.asdmname + '.' + field + '.spw' + spw + '.png')
+                    plt.close()
+
+        self.writelog('step8:OK')
 
 
 
