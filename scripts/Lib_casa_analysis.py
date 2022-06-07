@@ -153,8 +153,15 @@ class QSOanalysis():
         if not dryrun:
             cmdfile = self.visname + '.scriptForCalibration.py'
 
+            checksteps = open(cmdfile,'r')
+            syscalcheck = checksteps.readlines().copy()[6]
+            checksteps.close()
+
             f = open(cmdfile.replace('.py','.part.py'),'w')
-            f.write('mysteps = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]'+'\n')
+            if syscalcheck.split('1:')[1].split("'")[1] == 'Fix of SYSCAL table times':
+                f.write('mysteps = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'+'\n')
+            else:
+                f.write('mysteps = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]'+'\n')
             f.write('applyonly = True'+'\n')
             f.write('execfile('+'"'+cmdfile+'"'+',globals())'+'\n')
             f.close()
@@ -311,7 +318,7 @@ class QSOanalysis():
             f.write('   "column":"'+column+'",'+'\n')
             f.write('   "field":"0",'+'\n')
             f.write('   "stokes":"I",'+'\n')
-            f.write('   "NCPU":4,'+'\n')
+            f.write('   "NCPU":8,'+'\n')
             f.write('   "pbeam":True,'+'\n')
             f.write('   "dish_diameter":'+str(self.dish_diameter)+','+'\n')
             f.write('   "chanwidth":1,'+'\n')
@@ -321,6 +328,7 @@ class QSOanalysis():
             f.write('   "OneFitPerChannel":'+str((not mfsfit))+','+'\n')
             f.write('   "write":"'+write+'",'+'\n')
             f.write('   "outfile":"./specdata/'+outfile+'",'+'\n')
+            f.write('   "bounds":[[0,None]],'+'\n')
             f.write('   }'+'\n')
             f.write('myfit = uvm.uvmultifit(**kw_uvfit)'+'\n')
             f.close()

@@ -6,13 +6,16 @@ import time
 args = sys.argv
 
 dryrun = False
-nworker = 12
+nworker = int(args[2])
 
 from concurrent.futures import ThreadPoolExecutor
 from logging import StreamHandler, Formatter, INFO, getLogger
 
 flist = np.unique(np.load(args[1]))
-skipflag = args[2]
+try:
+    skipflag = args[3]
+except:
+    skipflag = 'do'
 
 def init_logger():
     handler = StreamHandler()

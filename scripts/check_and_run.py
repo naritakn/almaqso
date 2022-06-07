@@ -8,9 +8,10 @@ args = sys.argv
 
 tarlist = glob.glob('*.tar')
 urllist = np.load(args[1])
+asdm12m = np.load(args[2])
 
 try:
-    rmflag = str(args[2])
+    rmflag = str(args[3])
 except:
     rmflag = 'save'
 
@@ -22,6 +23,10 @@ for f in tarlist:
         print(f+' '+str(dd/1024/1024/1024))
         if rmflag == 'rm':
             os.system('rm -rf '+f)
+
+    elif 'https://almascience.eso.org/dataPortal/'+f in asdm12m:
+        print(f+' -> 7m, skipped')
+
     else:
         exec_tarlist.append(f)
 
