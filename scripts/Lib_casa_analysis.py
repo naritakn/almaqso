@@ -170,10 +170,10 @@ class QSOanalysis():
 
         if self.dish_diameter > 10.:
             # 12m
-            self.imsize = su.getOptimumSize(int(100./self.beamsize*5))
+            self.imsize = su.getOptimumSize(int(120./self.beamsize*5))
         else:
             # 7m
-            self.imsize = su.getOptimumSize(int(150./self.beamsize*5))
+            self.imsize = su.getOptimumSize(int(180./self.beamsize*5))
 
         self.cell = '{:.3f}'.format(self.beamsize/5) + 'arcsec'
 
