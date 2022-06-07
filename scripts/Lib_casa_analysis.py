@@ -684,49 +684,58 @@ class QSOanalysis():
     # step8: spectrum plot
     def specplot(self,dryrun=False):
 
+        failflag = False
+
         if not dryrun:
             from astropy import stats
             import matplotlib.pyplot as plt
 
             for field in self.fields:
                 for spw in self.spws:
-                    specfile = './specdata/'+self.visname+'.split.'+field+'.spw_'+spw+'.selfcal.dat'
-                    data = np.loadtxt(specfile)
-                    freq = data[:,0]/1.0e9 #GHz
-                    spec = data[:,1] #Jy
-                    spec_ma = stats.sigma_clip(spec,sigma=3.)
+                    try:
+                        specfile = './specdata/'+self.visname+'.split.'+field+'.spw_'+spw+'.selfcal.dat'
+                        data = np.loadtxt(specfile)
+                        freq = data[:,0]/1.0e9 #GHz
+                        spec = data[:,1] #Jy
+                        spec_ma = stats.sigma_clip(spec,sigma=3.)
 
-                    pp = np.ma.polyfit(freq,spec_ma,deg=1)
-                    #cont = np.ma.median(spec_ma)
-                    cont = pp[0]*freq+pp[1]
-                    rms = np.ma.std(spec_ma/cont)
-                    detect = np.ma.array(np.full_like(freq,np.ma.max(spec_ma/cont)+2.5*rms),mask=~spec_ma.mask)
+                        pp = np.ma.polyfit(freq,spec_ma,deg=1)
+                        #cont = np.ma.median(spec_ma)
+                        cont = pp[0]*freq+pp[1]
+                        rms = np.ma.std(spec_ma/cont)
+                        detect = np.ma.array(np.full_like(freq,np.ma.max(spec_ma/cont)+2.5*rms),mask=~spec_ma.mask)
 
-                    ymax = np.max(spec/cont) + 5*rms
-                    ymin = np.min(spec/cont) - 5*rms
+                        ymax = np.max(spec/cont) + 5*rms
+                        ymin = np.min(spec/cont) - 5*rms
 
-                    plt.close()
-                    plt.rcParams['font.family'] = 'Times New Roman'
-                    plt.rcParams['mathtext.fontset'] = 'stix'
-                    plt.rcParams["figure.dpi"] = 200
-                    plt.rcParams["font.size"] = 20
+                        plt.close()
+                        plt.rcParams['font.family'] = 'Times New Roman'
+                        plt.rcParams['mathtext.fontset'] = 'stix'
+                        plt.rcParams["figure.dpi"] = 200
+                        plt.rcParams["font.size"] = 20
 
-                    plt.figure(figsize=[10,8])
-                    #plt.gca().xaxis.set_major_formatter(plt.FormatStrFormatter('%.3f'))
+                        plt.figure(figsize=[10,8])
+                        #plt.gca().xaxis.set_major_formatter(plt.FormatStrFormatter('%.3f'))
 
-                    plt.step(freq,spec/cont,where='mid',c='b',lw=1)
-                    plt.plot(freq,detect,'r-',lw=5)
-                    plt.xlabel('frequency [GHz]')
-                    plt.ylabel('line/continuum')
-                    titlename = self.asdmname + ': ' + field + ' spw' + spw
-                    plt.title(titlename)
-                    os.system('mkdir -p specplot')
-                    plt.ylim(ymin,ymax)
-                    plt.savefig('./specplot/'+self.asdmname + '.' + field + '.spw' + spw + '.pdf')
-                    plt.savefig('./specplot/'+self.asdmname + '.' + field + '.spw' + spw + '.png')
-                    plt.close()
+                        plt.step(freq,spec/cont,where='mid',c='b',lw=1)
+                        plt.plot(freq,detect,'r-',lw=5)
+                        plt.xlabel('frequency [GHz]')
+                        plt.ylabel('line/continuum')
+                        titlename = self.asdmname + ': ' + field + ' spw' + spw
+                        plt.title(titlename)
+                        os.system('mkdir -p specplot')
+                        plt.ylim(ymin,ymax)
+                        plt.savefig('./specplot/'+self.asdmname + '.' + field + '.spw' + spw + '.pdf')
+                        plt.savefig('./specplot/'+self.asdmname + '.' + field + '.spw' + spw + '.png')
+                        plt.close()
 
-        self.writelog('step8:OK')
+                    except:
+                        failflag = True
+
+        if failflag:
+            self.writelog('step8:Partially failed')
+        else:
+            self.writelog('step8:OK')
 
 
 
