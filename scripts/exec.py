@@ -6,7 +6,7 @@ import time
 args = sys.argv
 
 dryrun = False
-nworker = 10
+nworker = 12
 
 from concurrent.futures import ThreadPoolExecutor
 from logging import StreamHandler, Formatter, INFO, getLogger
