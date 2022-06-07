@@ -12,6 +12,7 @@ for f in asdmList:
     asdm = f.replace('./data/','')
 
     telescope = None
+    #print(asdm)
     if asdm in asdm12m:
         telescope = 'A12m'
     else:
