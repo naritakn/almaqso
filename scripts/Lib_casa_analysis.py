@@ -29,7 +29,7 @@ class QSOanalysis():
         os.system('echo "'+content+'" >> '+'./log/'+self.asdmname+'.analysis.log')
 
     # step0: untar & make working dir
-    def intial_proc(self,dryrun=False):
+    def intial_proc(self,forcerun=False,dryrun=False):
 
         if dryrun:
             os.chdir(self.asdmname)
@@ -86,6 +86,7 @@ class QSOanalysis():
         if not dryrun:
 
             from casatasks import importasdm
+            os.system('rm -rf '+kw_importasdm['vis'])
             importasdm(**kw_importasdm)
 
         try:
@@ -129,6 +130,7 @@ class QSOanalysis():
         listOfIntents_init = (np.unique(IntentList)[np.unique(IntentList)!='OBSERVE_TARGET'])
 
         if not dryrun:
+            os.system('rm -rf '+self.visname+'.org')
             os.system('mv '+self.visname+' '+self.visname+'.org')
             kw_mstransform = {
                 'vis':self.visname+'.org',
@@ -139,6 +141,8 @@ class QSOanalysis():
                 }
 
             from casatasks import mstransform
+            os.system('rm -rf '+kw_mstransform['outputvis'])
+            os.system('rm -rf '+kw_mstransform['outputvis']+'.*')
             mstransform(**kw_mstransform)
 
         self.writelog('step3:OK')
@@ -658,6 +662,7 @@ class QSOanalysis():
 
                 if gzip:
                     os.system('gzip -1 -v '+glob.glob('*.tar')[0])
+                    os.system('rm -rf '+'calibrated.tar.gz')
                     os.system('tar -zcvf calibrated.tar.gz calibrated')
                     os.system('rm -rf ./calibrated')
 

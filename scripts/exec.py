@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from logging import StreamHandler, Formatter, INFO, getLogger
 
 flist = np.unique(np.load(args[1]))
+skipflag = args[2]
 
 def init_logger():
     handler = StreamHandler()
@@ -33,6 +34,7 @@ def casa_f(num):
 
         f = open('./python_scripts/'+cmdfile.replace('.py','.'+tarfilename+'.py'),'w')
         f.write('tarfilename = "'+tarfilename+'"'+'\n')
+        f.write('skipflag = "'+str(skipflag)+'"'+'\n')
         f.write('execfile('+'"'+cmdfile+'"'+',globals())'+'\n')
         f.close()
 
