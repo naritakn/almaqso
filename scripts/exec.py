@@ -11,7 +11,7 @@ nworker = int(args[2])
 from concurrent.futures import ThreadPoolExecutor
 from logging import StreamHandler, Formatter, INFO, getLogger
 
-flist = np.unique(np.load(args[1]))
+flist = np.load(args[1])
 try:
     skipflag = args[3]
 except:
