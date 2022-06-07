@@ -19,8 +19,11 @@ for f in asdmList:
 
     if len(imgs) >= 1:
         for img in imgs:
-            field = 'J'+img.split('.J')[1].split('.spw_')[0]
-            os.system('mkdir -p figs')
-            os.system('mkdir -p figs/'+telescope)
-            os.system('mkdir -p figs/'+telescope+'/'+field)
-            os.system('ln -sf '+os.path.abspath(img)+' '+'mkdir -p figs/'+telescope+'/'+field+'/')
+            try:
+                field = 'J'+img.split('.J')[1].split('.spw')[0]
+                os.system('mkdir -p figs')
+                os.system('mkdir -p figs/'+telescope)
+                os.system('mkdir -p figs/'+telescope+'/'+field)
+                os.system('ln -sf '+os.path.abspath(img)+' '+'figs/'+telescope+'/'+field+'/')
+            except:
+                pass
