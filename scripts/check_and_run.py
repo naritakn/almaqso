@@ -24,7 +24,7 @@ for f in tarlist:
         if rmflag == 'rm':
             os.system('rm -rf '+f)
 
-    elif 'https://almascience.eso.org/dataPortal/'+f in asdm12m:
+    elif not ('https://almascience.eso.org/dataPortal/'+f in asdm12m[:,0]):
         print(f+' -> 7m, skipped')
 
     else:
