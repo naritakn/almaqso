@@ -142,7 +142,7 @@ class QSOanalysis():
 
             from casatasks import mstransform
             os.system('rm -rf '+kw_mstransform['outputvis'])
-            os.system('rm -rf '+kw_mstransform['outputvis']+'.*')
+            os.system('rm -rf '+kw_mstransform['outputvis']+'.flagversions')
             mstransform(**kw_mstransform)
 
         self.writelog('step3:OK')
