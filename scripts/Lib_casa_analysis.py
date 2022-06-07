@@ -154,14 +154,14 @@ class QSOanalysis():
             cmdfile = self.visname + '.scriptForCalibration.py'
 
             checksteps = open(cmdfile,'r')
-            syscalcheck = checksteps.readlines().copy()[6]
+            syscalcheck = checksteps.readlines().copy()[21]
             checksteps.close()
 
             f = open(cmdfile.replace('.py','.part.py'),'w')
-            if syscalcheck.split('1:')[1].split("'")[1] == 'Fix of SYSCAL table times':
-                f.write('mysteps = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'+'\n')
-            else:
+            if syscalcheck.split(':')[1].split("'")[1] == 'Application of the bandpass and gain cal tables':
                 f.write('mysteps = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]'+'\n')
+            else:
+                f.write('mysteps = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]'+'\n')
             f.write('applyonly = True'+'\n')
             f.write('execfile('+'"'+cmdfile+'"'+',globals())'+'\n')
             f.close()
