@@ -276,7 +276,10 @@ class QSOanalysis():
             listobs(vis=kw_split['outputvis'],listfile=kw_split['outputvis']+'.listobs')
             mstransform(**kw_mstransform)
             listobs(vis=kw_mstransform['outputvis'],listfile=kw_mstransform['outputvis']+'.listobs')
-            split(**kw_split2)
+            if len(aU.getChanWidths(kw_mstransform['outputvis'])) > 1:
+                split(**kw_split2)
+            else:
+                os.system('ln -sf '+kw_split2['vis']+' '+kw_split2['outputvis'])
             listobs(vis=kw_split2['outputvis'],listfile=kw_split2['outputvis']+'.listobs')
 
             os.system('rm -rf '+kw_split['outputvis'])
