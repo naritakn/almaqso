@@ -1,6 +1,7 @@
 import glob
 import os
 import sys
+import numpy as np
 args = sys.argv
 
 asdmList = glob.glob('./data/uid___*')
