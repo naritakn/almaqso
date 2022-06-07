@@ -311,7 +311,7 @@ class QSOanalysis():
             f.write('   "column":"'+column+'",'+'\n')
             f.write('   "field":"0",'+'\n')
             f.write('   "stokes":"I",'+'\n')
-            f.write('   "NCPU":1,'+'\n')
+            f.write('   "NCPU":4,'+'\n')
             f.write('   "pbeam":True,'+'\n')
             f.write('   "dish_diameter":'+str(self.dish_diameter)+','+'\n')
             f.write('   "chanwidth":1,'+'\n')
