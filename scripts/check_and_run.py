@@ -17,10 +17,16 @@ except:
 
 exec_tarlist = []
 
+ireg_f = []
+ireg_size = []
+
 for f in tarlist:
     dd = urllist[urllist[:,0]=='https://almascience.eso.org/dataPortal/'+f][:,1].astype('int') - os.path.getsize(f)
     if dd > 0:
-        print(f+' '+str(dd/1024/1024/1024))
+        #print(f+' '+str(dd/1024/1024/1024))
+        ireg_f.append(f)
+        ireg_size.append(dd[0]/1024/1024/1024)
+
         if rmflag == 'rm':
             os.system('rm -rf '+f)
 
@@ -33,3 +39,8 @@ for f in tarlist:
 dt_now = datetime.datetime.now()
 ver = dt_now.isoformat().replace(':','-')
 np.save('exec_tarlist.v'+ver+'.npy',np.array(exec_tarlist))
+
+print('')
+print('### result ###')
+for (f,size) in zip(ireg_f,ireg_size):
+    print(f+' '+str(size))
