@@ -104,12 +104,13 @@ class QSOanalysis():
 
         else:
             try:
+                print('test')
                 self.spws = np.load('tempfiles/spws.npy')
             except:
                 self.spws = aU.getScienceSpws(vis=visname).split(",")
                 os.system('mkdir -p tempfiles')
                 np.save('tempfiles/spws.npy',np.array(self.spws))
-                
+
         self.asdmfile = asdmfile
         self.visname = visname
 
