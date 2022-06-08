@@ -215,7 +215,7 @@ class QSOanalysis():
                 os.system('rm -rf '+self.visname+'.wvr*')
                 os.system('rm -rf '+self.visname+'.*.png')
                 os.system('rm -rf '+self.visname+'.split.*')
-                os.system('rm *.asdm.sdm')
+                os.system('rm -rf *.asdm.sdm')
                 os.system('rm -rf '+self.projID)
 
     # step5-1: split calibrator observations
