@@ -279,7 +279,9 @@ class QSOanalysis():
             if aU.getNChanFromCaltable(kw_mstransform['outputvis'])[0] > 1:
                 split(**kw_split2)
             else:
-                os.system('ln -sf '+kw_split2['vis']+' '+kw_split2['outputvis'])
+                os.chdir('./calibrated/')
+                os.system('ln -sf '+self.visname+'.split.'+self.field+'.spw_'+self.spw+'.tmp2'+' '+self.visname+'.split.'+self.field+'.spw_'+self.spw)
+                os.chdir('../')
             listobs(vis=kw_split2['outputvis'],listfile=kw_split2['outputvis']+'.listobs')
 
             os.system('rm -rf '+kw_split['outputvis'])
