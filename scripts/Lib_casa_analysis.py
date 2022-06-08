@@ -297,9 +297,10 @@ class QSOanalysis():
             if aU.getNChanFromCaltable(kw_mstransform['outputvis'])[0] > 1:
                 split(**kw_split2)
             else:
-                os.chdir('./calibrated/')
-                os.system('mv '+self.visname+'.split.'+self.field+'.spw_'+self.spw+'.tmp2'+' '+self.visname+'.split.'+self.field+'.spw_'+self.spw)
-                os.chdir('../')
+                os.system('mv '+'./calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw+'.tmp2'+' '+'./calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw)
+                from casatasks import flagdata
+                flagdata(vis='./calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw,mode='unflag')
+
             listobs(vis=kw_split2['outputvis'],listfile=kw_split2['outputvis']+'.listobs')
 
             os.system('rm -rf '+kw_split['outputvis'])
