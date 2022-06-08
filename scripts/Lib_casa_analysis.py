@@ -70,9 +70,14 @@ class QSOanalysis():
     # step1: importasdm
     def importasdm(self,dryrun=False):
 
-        asdmfile = glob.glob('./' + self.projID + '/*/*/*/raw/*')[0]
-        os.system('ln -sf '+asdmfile+' .')
-        visname = (os.path.basename(asdmfile)).replace('.asdm.sdm','.ms')
+        try:
+            asdmfile = glob.glob('./' + self.projID + '/*/*/*/raw/*')[0]
+            os.system('ln -sf '+asdmfile+' .')
+            visname = (os.path.basename(asdmfile)).replace('.asdm.sdm','.ms')
+        except:
+            asdmfile = 'uid___' + self.tarfilename.split('_uid___')[1].replace('.tar','')
+            visname = asdmfile.replace('.asdm.sdm','.ms')
+
 
         kw_importasdm = {
             'asdm':os.path.basename(asdmfile),
