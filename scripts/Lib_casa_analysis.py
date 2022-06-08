@@ -299,7 +299,7 @@ class QSOanalysis():
             else:
                 os.system('mv '+'./calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw+'.tmp2'+' '+'./calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw)
                 from casatasks import flagdata
-                flagdata(vis='./calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw,mode='unflag')
+                flagdata(vis='./calibrated/'+self.visname+'.split.'+self.field+'.spw_'+self.spw,mode='unflag',flagbackup=False)
 
             listobs(vis=kw_split2['outputvis'],listfile=kw_split2['outputvis']+'.listobs')
 
