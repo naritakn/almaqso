@@ -9,6 +9,7 @@ asdm12m = np.load(args[1])
 
 for f in asdmList:
     imgs = glob.glob(f+'/specplot/*.png')
+    fitsimgs = glob.glob(f+'/imsg/*.image.fits')
     asdm = f.replace('./data/','')
 
     telescope = None
@@ -26,5 +27,15 @@ for f in asdmList:
                 os.system('mkdir -p figs/'+telescope)
                 os.system('mkdir -p figs/'+telescope+'/'+field)
                 os.system('ln -sf '+os.path.abspath(img)+' '+'figs/'+telescope+'/'+field+'/')
+            except:
+                pass
+    if len(fitsimgs) >= 1:
+        for fitsimg in fitsimgs:
+            try:
+                field = 'J'+fitsimg.split('.J')[1].split('.residual.allspw.')[0]
+                os.system('mkdir -p fits')
+                os.system('mkdir -p fits/'+telescope)
+                os.system('mkdir -p fits/'+telescope+'/'+field)
+                os.system('ln -sf '+os.path.abspath(fitsimg)+' '+'fits/'+telescope+'/'+field+'/')
             except:
                 pass
