@@ -298,7 +298,7 @@ class QSOanalysis():
                 split(**kw_split2)
             else:
                 os.chdir('./calibrated/')
-                os.system('ln -sf '+self.visname+'.split.'+self.field+'.spw_'+self.spw+'.tmp2'+' '+self.visname+'.split.'+self.field+'.spw_'+self.spw)
+                os.system('mv '+self.visname+'.split.'+self.field+'.spw_'+self.spw+'.tmp2'+' '+self.visname+'.split.'+self.field+'.spw_'+self.spw)
                 os.chdir('../')
             listobs(vis=kw_split2['outputvis'],listfile=kw_split2['outputvis']+'.listobs')
 
