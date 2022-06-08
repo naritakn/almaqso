@@ -23,7 +23,7 @@ else:
     print('step:0')
     obj.intial_proc(dryrun=True)
     print('step:1')
-    obj.importasdm(fryrun=True)
+    obj.importasdm(dryrun=True)
     print('step:2')
     obj.gen_calib_script(dryrun=True)
     print('step:3')
