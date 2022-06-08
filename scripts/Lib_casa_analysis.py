@@ -94,14 +94,22 @@ class QSOanalysis():
             os.system('rm -rf '+kw_importasdm['vis'])
             importasdm(**kw_importasdm)
 
-        try:
-            self.spws = aU.getScienceSpws(vis=visname).split(",")
-            os.system('mkdir -p tempfiles')
-            np.save('tempfiles/spws.npy',np.array(self.spws))
+            try:
+                self.spws = aU.getScienceSpws(vis=visname).split(",")
+                os.system('mkdir -p tempfiles')
+                np.save('tempfiles/spws.npy',np.array(self.spws))
 
-        except:
-            self.spws = np.load('tempfiles/spws.npy')
+            except:
+                self.spws = np.load('tempfiles/spws.npy')
 
+        else:
+            try:
+                self.spws = np.load('tempfiles/spws.npy')
+            except:
+                self.spws = aU.getScienceSpws(vis=visname).split(",")
+                os.system('mkdir -p tempfiles')
+                np.save('tempfiles/spws.npy',np.array(self.spws))
+                
         self.asdmfile = asdmfile
         self.visname = visname
 
