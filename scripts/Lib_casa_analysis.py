@@ -137,15 +137,17 @@ class QSOanalysis():
 
     # step3: remove TARGET observations
     def remove_target(self,dryrun=False):
-        IntentListASDM = aU.getIntentsFromASDM(self.asdmfile)
-
-        IntentList = []
-        for intfield in list(IntentListASDM):
-            IntentList = IntentList + IntentListASDM[intfield]
-
-        listOfIntents_init = (np.unique(IntentList)[np.unique(IntentList)!='OBSERVE_TARGET'])
 
         if not dryrun:
+
+            IntentListASDM = aU.getIntentsFromASDM(self.asdmfile)
+
+            IntentList = []
+            for intfield in list(IntentListASDM):
+                IntentList = IntentList + IntentListASDM[intfield]
+
+            listOfIntents_init = (np.unique(IntentList)[np.unique(IntentList)!='OBSERVE_TARGET'])
+
             os.system('rm -rf '+self.visname+'.org')
             os.system('mv '+self.visname+' '+self.visname+'.org')
             kw_mstransform = {
