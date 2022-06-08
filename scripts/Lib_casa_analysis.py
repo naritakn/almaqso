@@ -104,7 +104,6 @@ class QSOanalysis():
 
         else:
             try:
-                print('test')
                 self.spws = np.load('tempfiles/spws.npy')
             except:
                 self.spws = aU.getScienceSpws(vis=visname).split(",")
@@ -118,7 +117,10 @@ class QSOanalysis():
 
     # step2: generate calib script
     def gen_calib_script(self,dryrun=False):
-        refant = aU.commonAntennas(self.visname)
+        try:
+            refant = aU.commonAntennas(self.visname)
+        except:
+            refant = aU.commonAntennas(self.visname+'.split')
         kw_generateReducScript = {
             'msNames':self.visname,
             'refant':refant[0],
