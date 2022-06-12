@@ -34,7 +34,7 @@ else:
     print('step:5')
     obj.uvfit_run(plot=True)
     print('step:6')
-    obj.cont_imaging(statwtflag=False)
+    obj.cont_imaging()
     print('step:7')
     obj.spacesaving(gzip=True)
 
