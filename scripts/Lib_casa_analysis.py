@@ -194,7 +194,13 @@ class QSOanalysis():
             cmd = '"' + 'execfile('+"'"+cmdfile.replace('.py','.part.py')+"'"+')' +'"'
             os.system(self.casacmd+' --nologger --nogui -c '+cmd)
 
-        self.fields = np.unique(aU.getCalibrators(vis=self.visname+'.split'))
+        fields = np.unique(aU.getCalibrators(vis=self.visname+'.split'))
+        self.fields = []
+
+        for field in fields:
+            if field[0] == 'J':
+                self.fields.append(field)
+
 
         self.beamsize = aU.estimateSynthesizedBeam(self.visname+'.split')
         from casatools import synthesisutils
