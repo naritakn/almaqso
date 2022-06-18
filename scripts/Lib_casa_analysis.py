@@ -25,8 +25,8 @@ class QSOanalysis():
 
     def writelog(self,content=''):
         os.system('mkdir -p log')
-        os.system('touch ./log/'+self.asdmname+'.analysis.v1.log')
-        os.system('echo "'+content+'" >> '+'./log/'+self.asdmname+'.analysis.v1.log')
+        os.system('touch ./log/'+self.asdmname+'.analysis.v2.log')
+        os.system('echo "'+content+'" >> '+'./log/'+self.asdmname+'.analysis.v2.log')
 
     # step0: untar & make working dir
     def intial_proc(self,forcerun=False,dryrun=False):
@@ -249,6 +249,9 @@ class QSOanalysis():
             'intent':'*ON_SOURCE*',
             'keepflags':False,
             'reindex':True,
+            'regridms':True,
+            'mode':'channel',
+            'outframe':'LSRK',
             }
 
         if not dryrun:
@@ -365,10 +368,13 @@ class QSOanalysis():
             f.write('   "dish_diameter":'+str(self.dish_diameter)+','+'\n')
             f.write('   "chanwidth":1,'+'\n')
             f.write('   "var":["0,0,p[0]"],'+'\n')
-            f.write('   "p_ini":[1.0],'+'\n')
+            f.write('   "p_ini":[10.0],'+'\n')
             f.write('   "model":["delta"],'+'\n')
             f.write('   "OneFitPerChannel":'+str((not mfsfit))+','+'\n')
             f.write('   "write":"'+write+'",'+'\n')
+            f.write('   "method":"simplex",'+'\n')
+            f.write('   "bounds":[[0,None]],')
+            #f.write('   "SMPtune":[1.e-4,1.e-1,10000],')
             f.write('   "outfile":"./specdata/'+outfile+'",'+'\n')
             f.write('   }'+'\n')
             f.write('myfit = uvm.uvmultifit(**kw_uvfit)'+'\n')
@@ -701,7 +707,7 @@ class QSOanalysis():
         self.writelog('step5:OK')
 
     # step6: continuum imaging
-    def cont_imaging(self,dryrun=False):
+    def cont_imaging(self,clean=False,dryrun=False):
 
         if not dryrun:
 
@@ -740,40 +746,40 @@ class QSOanalysis():
                 for ext in ['.image','.mask','.model','.image.pbcor','.residual','.psf','.pb','.sumwt']:
                     os.system('rm -rf '+kw_tclean['imagename']+ext)
 
-                from casatasks import imstat
-                imgstat = imstat(kw_tclean['imagename']+'.image.fits',algorithm='biweight')
-                threshold = '{:.2f}'.format(imgstat['sigma'][0]*1000)+'mJy'
+                if clean:
+                    from casatasks import imstat
+                    imgstat = imstat(kw_tclean['imagename']+'.image.fits',algorithm='biweight')
+                    threshold = '{:.2f}'.format(imgstat['sigma'][0]*1000)+'mJy'
+                    kw_tclean = {
+                        'vis':visForimsg,
+                        'imagename':'./imsg/'+self.asdmname+'.'+field+'.residual.allspw.selfcal.mfs.briggs.robust_0.5.3sigma.clean',
+                        'datacolumn':'corrected',
+                        'imsize':self.imsize,
+                        'cell':self.cell,
+                        'weighting':'briggs',
+                        'robust':0.5,
+                        'deconvolver':'hogbom',
+                        'gridder':'standard',
+                        'specmode':'mfs',
+                        'threshold':threshold,
+                        'niter':1000000,
+                        'nterms':2,
+                        'interactive':False,
+                        'pbcor':True,
+                        'restoringbeam':'common',
+                        }
 
-                kw_tclean = {
-                    'vis':visForimsg,
-                    'imagename':'./imsg/'+self.asdmname+'.'+field+'.residual.allspw.selfcal.mfs.briggs.robust_0.5.3sigma.clean',
-                    'datacolumn':'corrected',
-                    'imsize':self.imsize,
-                    'cell':self.cell,
-                    'weighting':'briggs',
-                    'robust':0.5,
-                    'deconvolver':'hogbom',
-                    'gridder':'standard',
-                    'specmode':'mfs',
-                    'threshold':threshold,
-                    'niter':1000000,
-                    'nterms':2,
-                    'interactive':False,
-                    'pbcor':True,
-                    'restoringbeam':'common',
-                    }
-
-                os.system('mkdir -p imsg')
-                os.system('rm -rf '+kw_tclean['imagename']+'*')
-                from casatasks import tclean, exportfits
-                tclean(**kw_tclean)
-                exportfits(kw_tclean['imagename']+'.image',kw_tclean['imagename']+'.image.fits')
-                exportfits(kw_tclean['imagename']+'.image.pbcor',kw_tclean['imagename']+'.image.pbcor.fits')
-                exportfits(kw_tclean['imagename']+'.psf',kw_tclean['imagename']+'.psf.fits')
+                    os.system('mkdir -p imsg')
+                    os.system('rm -rf '+kw_tclean['imagename']+'*')
+                    from casatasks import tclean, exportfits
+                    tclean(**kw_tclean)
+                    exportfits(kw_tclean['imagename']+'.image',kw_tclean['imagename']+'.image.fits')
+                    exportfits(kw_tclean['imagename']+'.image.pbcor',kw_tclean['imagename']+'.image.pbcor.fits')
+                    exportfits(kw_tclean['imagename']+'.psf',kw_tclean['imagename']+'.psf.fits')
 
 
-                for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
-                    os.system('rm -rf '+kw_tclean['imagename']+ext)
+                    for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
+                        os.system('rm -rf '+kw_tclean['imagename']+ext)
 
         self.writelog('step6:OK')
 
