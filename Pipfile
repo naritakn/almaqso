@@ -4,20 +4,5 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-numpy = "*"
-pandas = "*"
-scipy = "*"
-matplotlib = "*"
-astropy = "*"
-ipython = "*"
-tqdm = "*"
-wheel = "*"
-twine = "*"
-aplpy = "*"
-astroquery = "*"
-pyvo = "*"
 
 [dev-packages]
-
-[requires]
-python_version = "3.9"
