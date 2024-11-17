@@ -8,9 +8,15 @@ on:
 jobs:
   run-casa:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/skrbcr/casa:0.1
-
     steps:
-    - name: Check CASA version
-      run: casa --version
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run CASA Docker Image
+      run: |
+        docker pull ghcr.io/skrbcr/casa:0.1
+        docker run ghcr.io/skrbcr/casa:0.1 casa --version
