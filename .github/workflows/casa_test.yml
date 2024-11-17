@@ -9,7 +9,7 @@ jobs:
   run-casa:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/skrbcr/casa-docker:latest
+      image: ghcr.io/skrbcr/casa-docker:sha256-69052c3f67f9c38eab58e1db9ae9fc60f27f40dd3c74db7c3f99017b4f130c70.sig
 
     steps:
     - name: Check CASA version
