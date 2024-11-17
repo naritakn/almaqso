@@ -1,5 +1,7 @@
 # User Defined
 /urls/
+*.tar
+/uid__*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+astroquery = "*"
+numpy = "*"
+pandas = "*"
+pyvo = "*"
+setuptools = "*"
+scipy = "*"
+
+[dev-packages]
+flake8 = "*"
+autopep8 = "*"
+pytest = "*"
+
+[requires]
+python_version = "3.12"
+python_full_version = "3.12.7"
+
+[scripts]
+set_env = "export CASA_AU_PATH=$HOME/analysis_scripts"

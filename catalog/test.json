@@ -81,10 +81,19 @@
 		"sourceDecDegUncertainty":2.77777777778E-8,
 		"sourceRaDeg":84.709839825,
 		"sourceRaDegUncertainty":3.88888888889E-8,
-		"names":[{"name":"J0538-4405"},
-			{"name":"J0538-440"},
-			{"name":"J053851-440507"},
-			{"name":"B0537-441"}
+		"names":[
+			{
+				"name":"J0538-4405"
+			},
+			{
+				"name":"J0538-440"
+			},
+			{
+				"name":"J053851-440507"
+			},
+			{
+				"name":"B0537-441"
+			}
 		],
 		"raHex":"05:38:50.36156",
 		"decHex":"-44:05:08.9389"
