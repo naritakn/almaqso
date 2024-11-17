@@ -1,0 +1,16 @@
+name: Use CASA Docker Image with Container
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  run-casa:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/skrbcr/casa:0.1
+
+    steps:
+    - name: Check CASA version
+      run: casa --version
