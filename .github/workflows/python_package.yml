@@ -36,8 +36,7 @@ jobs:
     #     pipenv run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Check modules
       run: |
-        ls -la /root/
-        ls -la /root/.casa
+        casa --nologger --nogui -c "import almaqa2csg as csg"
     - name: Test with pytest
       env:
         ALMAQSO_CASA: casa
