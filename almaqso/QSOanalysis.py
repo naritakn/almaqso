@@ -5,8 +5,6 @@ import sys
 import numpy as np
 import glob
 
-sys.path.append(os.environ.get('CASA_AU_PATH'))
-
 
 class QSOanalysis():
     def __init__(self, tarfilename, casacmd='casa', casacmdforuvfit='casa',

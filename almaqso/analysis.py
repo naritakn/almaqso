@@ -3,7 +3,7 @@ from .QSOanalysis import QSOanalysis
 
 
 def analysis(tarfilename: str, skipflag='skip', casacmd='casa'):
-    obj = QSOanalysis(tarfilename, spacesave=True, casacmd=casacmd)
+    obj = QSOanalysis(tarfilename, spacesave=True, casacmd=casacmd, casacmdforuvfit='casa')
 
     asdmname = 'uid___' + (tarfilename.split('_uid___')
                            [1]).replace('.asdm.sdm.tar', '')
