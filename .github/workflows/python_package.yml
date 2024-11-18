@@ -15,7 +15,7 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
     container:
-      image: ghcr.io/skrbcr/casa-docker:main
+      image: ghcr.io/skrbcr/casa-docker
 
     steps:
     - uses: actions/checkout@v4
