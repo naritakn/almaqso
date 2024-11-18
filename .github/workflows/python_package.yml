@@ -34,12 +34,6 @@ jobs:
     #     pipenv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
     #     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
     #     pipenv run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Add CASA analysisUtilities to PYTHONPATH
-      run: |
-        export PYTHONPATH=$PYTHONPATH:$HOME/analysis_scripts
-        echo "PYTHONPATH: $PYTHONPATH"
-        casa --nologger --nogui -c "import sys; print('sys.path:', sys.path)"
-        casa --nologger --nogui -c "import analysisUtils as au; import almaqa2csg as csg"
     - name: Test with pytest
       env:
         ALMAQSO_CASA: casa
