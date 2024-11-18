@@ -1,8 +1,9 @@
+import os
 import subprocess
 from pathlib import Path
 
 CURRENT_DIR = Path(__file__).parent
-CASA_PATH = '/usr/local/casa/casa-6.6.1-17-pipeline-2024.1.0.8/bin/casa'
+CASA_PATH = os.environ.get('ALMAQSO_CASA', 'casa')
 
 
 def run_casa_script(script_name):
