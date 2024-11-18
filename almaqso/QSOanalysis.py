@@ -41,7 +41,7 @@ class QSOanalysis():
                 os.makedirs(self.asdmname)
                 os.system('cp '+self.tarfilename+' '+self.asdmname+'/')
                 os.chdir(self.asdmname)
-                os.system('tar -xvf '+self.tarfilename)
+                os.system('tar -xf '+self.tarfilename)
 
             elif os.path.exists(self.tarfilename+'.gz'):
                 os.makedirs(self.asdmname)

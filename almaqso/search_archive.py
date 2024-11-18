@@ -2,7 +2,7 @@ import sys
 import os
 import numpy as np
 import json
-from almaqso import QSOquery
+from almaqso.QSOquery import QSOquery
 
 
 def search_archive(band: int, jfilename: str):
