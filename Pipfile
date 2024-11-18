@@ -10,6 +10,7 @@ pandas = "*"
 pyvo = "*"
 setuptools = "*"
 scipy = "*"
+ipython = "*"
 
 [dev-packages]
 flake8 = "*"
