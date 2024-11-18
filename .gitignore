@@ -2,6 +2,7 @@
 /urls/
 *.tar
 /uid__*
+Pipfile.lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
