@@ -36,8 +36,10 @@ jobs:
     #     pipenv run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Add CASA analysisUtilities to PYTHONPATH
       run: |
-        export PYTHONPATH=$PYTHONPATH:/root/analysis_scripts
+        export PYTHONPATH=$PYTHONPATH:$HOME/analysis_scripts
+        echo "PYTHONPATH: $PYTHONPATH"
         casa --nologger --nogui -c "import sys; print('sys.path:', sys.path)"
+        casa --nologger --nogui -c "import analysisUtils as au; import almaqa2csg as csg"
     - name: Test with pytest
       env:
         ALMAQSO_CASA: casa
