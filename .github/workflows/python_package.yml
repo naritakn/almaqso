@@ -38,6 +38,7 @@ jobs:
       run: |
         ls -la /root/analysis_scripts
         find / -name "almaqa2csg*"
+        casa --nologger --nogui -c "import sys; print('sys.path:', sys.path)"
     - name: Test with pytest
       env:
         ALMAQSO_CASA: casa
