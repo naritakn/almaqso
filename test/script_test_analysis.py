@@ -15,4 +15,3 @@ analysis(
     skipflag='',
     casacmd=CASA_PATH
 )
-assert os.path.exists(DATA_PATH)

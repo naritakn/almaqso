@@ -1,9 +1,29 @@
 import almaqa2csg as csg
-import analysisUtils as au
+import analysisUtils as aU
 import os
 import sys
 import numpy as np
 import glob
+import subprocess
+
+
+def _run_casa_cmd(casa, cmd):
+    try:
+        result = subprocess.run(
+            [casa, '--nologger', '--nogui', '-c', f'"{cmd}"'],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        print(f"STDOUT for {cmd}:", result.stdout)
+        print(f"STDERR for {cmd}:", result.stderr)
+    except subprocess.CalledProcessError as e:
+        print(f"Error while executing {cmd}:")
+        print(f"Return Code: {e.returncode}")
+        print(f"STDOUT: {e.stdout}")
+        print(f"STDERR: {e.stderr}")
+        raise
 
 
 class QSOanalysis():
@@ -20,7 +40,7 @@ class QSOanalysis():
             (tarfilename.split('_uid___')[1]).replace('.asdm.sdm.tar', '')
 
         try:
-            print(f'analysisUtils of {au.version()} will be used.')
+            print(f'analysisUtils of {aU.version()} will be used.')
         except Exception:
             raise Exception('analysisUtils is not found')
 
@@ -97,7 +117,7 @@ class QSOanalysis():
             importasdm(**kw_importasdm)
 
             try:
-                self.spws = au.getScienceSpws(vis=visname).split(",")
+                self.spws = aU.getScienceSpws(vis=visname).split(",")
                 os.system('mkdir -p tempfiles')
                 np.save('tempfiles/spws.npy', np.array(self.spws))
 
@@ -107,7 +127,7 @@ class QSOanalysis():
             try:
                 self.spws = np.load('tempfiles/spws.npy')
             except Exception:
-                self.spws = au.getScienceSpws(vis=visname).split(",")
+                self.spws = aU.getScienceSpws(vis=visname).split(",")
                 os.system('mkdir -p tempfiles')
                 np.save('tempfiles/spws.npy', np.array(self.spws))
 
@@ -119,40 +139,43 @@ class QSOanalysis():
     # step2: generate calib script
     def gen_calib_script(self, dryrun=False):
         try:
-            refant = au.commonAntennas(self.visname)
+            refant = aU.commonAntennas(self.visname)
+            vis = self.visname
         except Exception:
-            refant = au.commonAntennas(self.visname+'.split')
-        kw_generateReducScript = {
-            'msNames': self.visname,
-            'refant': refant[0],
-            'corrAntPos': False,
-        }
+            refant = aU.commonAntennas(self.visname + '.split')
+            vis = self.visname + '.split'
 
         if not dryrun:
             if os.path.exists(
                     f'./log/{self.visname}.scriptForCalibration.py'
                     ):
-                os.system('cp ./log/'+self.visname +
-                          '.scriptForCalibration.py ./')
+                print('Calibration script already exists.')
+                os.system(f'cp ./log/{self.visname}.scriptForCalibration.py ./')
             else:
+                print('Calibration script will be generated.')
+                kw_generateReducScript = {
+                    'msNames': vis,
+                    'refant': refant[0],
+                    'corrAntPos': False,
+                }
                 csg.generateReducScript(
-                    **kw_generateReducScript, useCalibratorService=False)
-                # au.generateReducScript(**kw_generateReducScript)
+                        msNames = vis,
+                        refant = refant[0],
+                        corrAntPos = False,
+                        useCalibratorService = False
+                )
                 os.system('mkdir -p ./log')
-                os.system('cp '+self.visname +
-                          '.scriptForCalibration.py ./log/')
+                os.system(f'cp {self.visname}.scriptForCalibration.py ./log/')
 
         self.refant = refant
-        self.dish_diameter = au.almaAntennaDiameter(refant[0])
+        self.dish_diameter = aU.almaAntennaDiameter(refant[0])
 
         self.writelog('step2:OK')
 
     # step3: remove TARGET observations
     def remove_target(self, dryrun=False):
-
         if not dryrun:
-
-            IntentListASDM = au.getIntentsFromASDM(self.asdmfile)
+            IntentListASDM = aU.getIntentsFromASDM(self.asdmfile)
 
             IntentList = []
             for intfield in list(IntentListASDM):
@@ -208,14 +231,14 @@ class QSOanalysis():
         # if vis not in glob.glob('./*'):
         #     vis = self.visname
 
-        fields = np.unique(au.getCalibrators(vis=vis))
+        fields = np.unique(aU.getCalibrators(vis=vis))
         self.fields = []
 
         for field in fields:
             if field[0] == 'J':
                 self.fields.append(field)
 
-        self.beamsize = au.estimateSynthesizedBeam(vis)
+        self.beamsize = aU.estimateSynthesizedBeam(vis)
         from casatools import synthesisutils
         su = synthesisutils()
 
@@ -313,16 +336,21 @@ class QSOanalysis():
         if not dryrun:
             from casatasks import split, listobs, delmod
             os.system('mkdir -p ./calibrated')
-            # Nchans = [au.getNChanFromCaltable(self.visname+'.split')[int(spw)] for spw in self.spws]
+            # Nchans = [aU.getNChanFromCaltable(self.visname+'.split')[int(spw)] for spw in self.spws]
             vis = self.visname + '.split'
             # if vis not in glob.glob('./*'):
             #     vis = self.visname
+
+            width = aU.getNChanFromCaltable(vis)
+            if not isinstance(width, int):
+                width = width[int(spw)]
+
             kw_split = {
                 'vis': vis,
                 'outputvis': f'calibrated/{vis}.split.{field}.spw_{spw}.avg',
                 'datacolumn': 'corrected',
                 'spw': spw,
-                'width': au.getNChanFromCaltable(vis)[int(spw)],
+                'width': width,
                 'field': field,
                 'intent': '*ON_SOURCE*',
                 'keepflags': False,
@@ -377,41 +405,27 @@ class QSOanalysis():
             else:
                 outfile = f'{vis}.{self.field}.spw_{self.spw}.{intent}.dat'
 
-            # spws = ','.join(np.array(range(len(self.spws))).astype('<3U'))
-            f = open('./tempfiles/'+outfile.replace('.dat', '.kw_uvfit.py'), 'w')
-            f.write('from NordicARC import uvmultifit as uvm'+'\n')
-            f.write('\n')
-            f.write('kw_uvfit = {'+'\n')
-            f.write('   "vis":"'+'calibrated/'+vis+'.' +
-                    self.field+'.spw_'+self.spw+'",'+'\n')
-            f.write('   "spw":"0",'+'\n')
-            f.write('   "column":"'+column+'",'+'\n')
-            f.write('   "field":"0",'+'\n')
-            f.write('   "stokes":"I",'+'\n')
-            f.write('   "NCPU":8,'+'\n')
-            f.write('   "pbeam":True,'+'\n')
-            f.write('   "dish_diameter":'+str(self.dish_diameter)+','+'\n')
-            f.write('   "chanwidth":1,'+'\n')
-            f.write('   "var":["0,0,p[0]"],'+'\n')
-            f.write('   "p_ini":[10.0],'+'\n')
-            f.write('   "model":["delta"],'+'\n')
-            f.write('   "OneFitPerChannel":'+str((not mfsfit))+','+'\n')
-            f.write('   "write":"'+write+'",'+'\n')
-            f.write('   "method":"simplex",'+'\n')
-            f.write('   "bounds":[[0,None]],')
-            # f.write('   "SMPtune":[1.e-4,1.e-1,10000],')
-            f.write('   "outfile":"./specdata/'+outfile+'",'+'\n')
-            f.write('   }'+'\n')
-            f.write('myfit = uvm.uvmultifit(**kw_uvfit)'+'\n')
-            f.close()
-
-            options = "--nologger --nogui --nologfile"
-            script_path = f"./tempfiles/\
-                    {outfile.replace('.dat', '.kw_uvfit.py')}"
-            script_command = f"execfile('{script_path}')"
-            cmd = f"{self.casacmdforuvfit} {options} -c '{script_command}'"
-
-            os.system(cmd)
+            from NordicARC import uvmultifit as uvm
+            myfit = uvm.uvmultifit(
+                    vis=f'calibrated/{vis}.{self.field}.spw_{self.spw}',
+                    spw='0',
+                    column=column,
+                    field=0,
+                    stokes='I',
+                    NCPU=8,
+                    pbeam=True,
+                    dish_diameter=self.dish_diameter,
+                    chanwidth=1,
+                    var=['0,0,p[0]'],
+                    p_ini=[10.0],
+                    model=['delta'],
+                    OneFitPerChannel=(not mfsfit),
+                    write=write,
+                    method='simplex',
+                    bounds=[[0, None]],
+                    outfile=f'./specdata/{outfile}',
+                    )
+            print(myfit.result)
 
     # step5-4: gaincal
     def uvfit_gaincal(self, intent='phase', solint='int', solnorm=False,

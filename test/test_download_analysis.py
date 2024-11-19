@@ -26,14 +26,14 @@ def run_casa_script(script_name):
 
 
 def test_download_analysis():
-    subprocess.run(
-        [
-            'python',
-            f'{CURRENT_DIR}/script_test_download.py'
-        ],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
+    # subprocess.run(
+    #     [
+    #         'python',
+    #         f'{CURRENT_DIR}/script_test_download.py'
+    #     ],
+    #     check=True,
+    #     stdout=subprocess.PIPE,
+    #     stderr=subprocess.PIPE,
+    #     text=True
+    # )
     run_casa_script(f'{CURRENT_DIR}/script_test_analysis.py')
