@@ -14,23 +14,9 @@ So many bugs are still there, and I am trying to fix them.
 ### CASA Modules
 
 - analysisUtilities
-- [UVMultiFit](https://github.com/onsala-space-observatory/UVMultiFit): The installation is guided [here](https://github.com/onsala-space-observatory/UVMultiFit/blob/master/INSTALL.md). If you use CASA version 6, you may be supposed to switch the branch to `casa6` (I am not sure though).
+- UVMultiFit  If you use CASA 6, you should switch the branch to `develop` to build properly.
 
-**Modification required**
-
-Some types use in modules shown above is deprecated.
-Please modify like below:
-
-`analysisUtils.py` of analysisUtilities:
-
-- `np.int32`, `np.int64` and `np.long` -> `int`
-- `np.float`, `np.float32`, `np.float64`, `float32` and `float64` -> `float`
-
-`uvmultifit.py` of UVMultiFit:
-
-- `np.int32`, `np.int64` -> `int`
-- `np.float32`, `np.float64` -> `float`
-- `np.bool` -> `bool`
+Details (e.g., how to install and modify) are described in [Pre-requisites](PreRequisites.md).
 
 ## Test
 
