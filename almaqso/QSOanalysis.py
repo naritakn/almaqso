@@ -140,10 +140,11 @@ class QSOanalysis():
     def gen_calib_script(self, dryrun=False):
         try:
             refant = aU.commonAntennas(self.visname)
-            vis = self.visname
+            # vis = self.visname
         except Exception:
             refant = aU.commonAntennas(self.visname + '.split')
-            vis = self.visname + '.split'
+            # vis = self.visname + '.split'
+        vis = self.visname
 
         if not dryrun:
             if os.path.exists(
@@ -227,7 +228,7 @@ class QSOanalysis():
                                                 '.part.py')+"'"+')' + '"'
             os.system(self.casacmd+' --nologger --nogui -c '+cmd)
 
-        vis = self.visname  # + '.split'
+        vis = self.visname + '.split'
         # if vis not in glob.glob('./*'):
         #     vis = self.visname
 
@@ -377,7 +378,8 @@ class QSOanalysis():
     # step5-2: create model column
     def uvfit_createcol(self, modelcol=True, dryrun=False):
         if not dryrun:
-            vis = self.visname + '.split.split'
+            vis = self.visname + '.split'
+            print(vis)
             # if vis not in glob.glob('./*'):
             #     vis = self.visname
             kw_clearcal = {
@@ -396,7 +398,7 @@ class QSOanalysis():
             os.system('mkdir -p tempfiles')
             os.system('mkdir -p specdata')
 
-            vis = self.visname + '.split.split'
+            vis = self.visname + '.split'
             # if vis not in glob.glob('./*'):
             #     vis = self.visname
 
@@ -425,12 +427,11 @@ class QSOanalysis():
                     bounds=[[0, None]],
                     outfile=f'./specdata/{outfile}',
                     )
-            print(myfit.result)
 
     # step5-4: gaincal
     def uvfit_gaincal(self, intent='phase', solint='int', solnorm=False,
                       gaintype='G', calmode='p', gaintable='', dryrun=False):
-        vis = self.visname + '.split.split'
+        vis = self.visname + '.split'
         # if vis not in glob.glob('./*'):
         #     vis = self.visname
 
@@ -460,7 +461,7 @@ class QSOanalysis():
     # step5-5: applycal
     def uvfit_applycal(self, gaintable='', dryrun=False, removeflag=False):
         if not dryrun:
-            vis = self.visname + '.split.split'
+            vis = self.visname + '.split'
             # if vis not in glob.glob('./*'):
             #     vis = self.visname
 
@@ -504,7 +505,7 @@ class QSOanalysis():
                 for field in self.fields:
                     for spw in self.spws:
                         # spw = 'all'
-                        caltablebase = self.asdmname+'.ms.split.split.'+field+'.spw_'+spw+'.avg'
+                        caltablebase = self.asdmname+'.ms.split.'+field+'.spw_'+spw+'.avg'
                         caltable0 = './caltables/' + caltablebase + '.'+type+'_0'
                         caltable1 = './caltables/' + caltablebase + '.'+type+'_1'
 
@@ -551,7 +552,7 @@ class QSOanalysis():
 
                 for field in self.fields:
                     for spw in self.spws:
-                        caltablebase = self.asdmname+'.ms.split.split.'+field+'.spw_'+spw
+                        caltablebase = self.asdmname+'.ms.split.'+field+'.spw_'+spw
                         caltable0 = './caltables/' + caltablebase + '.'+type+'_0'
                         caltable1 = './caltables/' + caltablebase + '.'+type+'_1'
 
@@ -603,7 +604,7 @@ class QSOanalysis():
                 from scipy.optimize import least_squares
                 tb = table()
                 tb.open('calibrated/'+self.visname +
-                        '.split.split.'+self.field+'.spw_'+self.spw)
+                        '.split.'+self.field+'.spw_'+self.spw)
                 if datacolumn == 'data':
                     data = tb.getcol('DATA').copy()
                 elif datacolumn == 'corrected':
@@ -629,7 +630,7 @@ class QSOanalysis():
                     model[0, :, i] = model[0, :, i] + spec.astype('complex')
                     model[1, :, i] = model[1, :, i] + spec.astype('complex')
 
-                tb.open('calibrated/'+self.visname+'.split.split.' +
+                tb.open('calibrated/'+self.visname+'.split.' +
                         self.field+'.spw_'+self.spw, nomodify=False)
                 if savemodel:
                     tb.putcol('MODEL_DATA', model.copy())
@@ -648,14 +649,14 @@ class QSOanalysis():
 
                 if intent is None:
                     infile = './specdata/'+self.visname + \
-                        '.split.split.'+self.field+'.spw_'+self.spw+'.dat'
+                        '.split.'+self.field+'.spw_'+self.spw+'.dat'
                 else:
-                    infile = './specdata/'+self.visname+'.split.split.' + \
+                    infile = './specdata/'+self.visname+'.split.' + \
                         self.field+'.spw_'+self.spw+'.'+intent+'.dat'
 
                 # spec
                 tb.open('calibrated/'+self.visname +
-                        '.split.split.'+self.field+'.spw_'+self.spw)
+                        '.split.'+self.field+'.spw_'+self.spw)
                 data = tb.getcol('DATA')
                 model = np.zeros_like(data, dtype='complex')
                 modeldata = np.loadtxt(infile)
@@ -666,7 +667,7 @@ class QSOanalysis():
                     model[1, :, i] = model[1, :, i] + spec.astype('complex')
 
                 tb.close()
-                tb.open('calibrated/'+self.visname+'.split.split.' +
+                tb.open('calibrated/'+self.visname+'.split.' +
                         self.field+'.spw_'+self.spw, nomodify=False)
                 if savemodel:
                     tb.putcol('MODEL_DATA', model.copy())
@@ -761,9 +762,9 @@ class QSOanalysis():
                     write='', column='corrected', intent='selfcal', dryrun=dryrun, mfsfit=False)
                 if self.spacesave:
                     os.system('rm -rf calibrated/'+self.visname +
-                              '.split.split.'+self.field+'.spw_'+self.spw)
+                              '.split.'+self.field+'.spw_'+self.spw)
                     os.system('rm -rf calibrated/'+self.visname +
-                              '.split.split.'+self.field+'.spw_'+self.spw+'.listobs')
+                              '.split.'+self.field+'.spw_'+self.spw+'.listobs')
 
         self.uvfit_gainplot(dryrun=(not plot), allspws=True, type='phase')
         self.uvfit_gainplot(dryrun=(not plot), allspws=True, type='amp_phase')
@@ -778,7 +779,7 @@ class QSOanalysis():
             for field in self.fields:
                 os.system('rm -rf '+'./calibrated/concat.'+field+'.ms')
                 visForimsg = glob.glob(
-                    './calibrated/'+self.visname+'.split.split.'+field+'.spw_*.avg')
+                    './calibrated/'+self.visname+'.split.'+field+'.spw_*.avg')
 
                 kw_tclean = {
                     'vis': visForimsg,
@@ -862,8 +863,8 @@ class QSOanalysis():
                 for field in self.fields:
                     for spw in self.spws:
                         kw_mstransform = {
-                            'vis': 'calibrated/'+self.visname+'.split.split.'+field+'.spw_'+spw+'.avg',
-                            'outputvis': 'calibrated/'+self.visname+'.split.split.'+field+'.spw_'+spw+'.avg'+'.selfcal.residual',
+                            'vis': 'calibrated/'+self.visname+'.split.'+field+'.spw_'+spw+'.avg',
+                            'outputvis': 'calibrated/'+self.visname+'.split.'+field+'.spw_'+spw+'.avg'+'.selfcal.residual',
                             'datacolumn': 'corrected',
                             'keepflags': True
                         }
@@ -921,7 +922,7 @@ class QSOanalysis():
                         for selfcal in ['noselfcal', 'selfcal']:
                             try:
                                 specfile = './specdata/'+self.visname + \
-                                    '.split.split.'+field+'.spw_'+spw+'.'+selfcal+'.dat'
+                                    '.split.'+field+'.spw_'+spw+'.'+selfcal+'.dat'
                                 data = np.loadtxt(specfile)
                                 freq = data[:, 0]/1.0e9  # GHz
                                 spec = data[:, 1]  # Jy
