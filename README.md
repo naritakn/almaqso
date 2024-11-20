@@ -1,13 +1,22 @@
 # almaqso
 
 This repository is a folk of [astroysmr/almaqso](https://github.com/astroysmr/almaqso), which is no longer maintained.
+So many bugs are still there, and I am trying to fix them.
 
-## For client
+**PLEASE REFER TO THE [ISSUE](https://github.com/skrbcr/almaqso/issues) SECTION SINCE IT CONTAINS THE BUGS AND INFORMATION.**
 
-- I am now currently testing this repository with `CASA version 6.6.1-17-pipeline-2024.1.0.8`.
-- I am using the latest version of `Python`. Maybe any version newer than `3.8` is fine.
-- You may need to modify the `analysisUtilities.py` provided by NRAO. Details are described [here](https://github.com/skrbcr/almaqso/issues/2).
-- To follow other bugs or information, please refer the [issues](https://github.com/skrbcr/almaqso/issues).
+## Pre-requisites
+
+### CASA
+
+- Please use CASA with ALMA pipeline. I am using `CASA version 6.6.1-17-pipeline-2024.1.0.8`.
+
+### CASA Modules
+
+- analysisUtilities
+- UVMultiFit  If you use CASA 6, you should switch the branch to `develop` to build properly.
+
+Details (e.g., how to install and modify) are described in [Pre-requisites](PreRequisites.md).
 
 ## Test
 
@@ -60,7 +69,7 @@ Then, you can run the test by
 $ pytest
 ```
 
-Or you examine run downloading and analysis test individually:
+Or you can examine downloading and analysis tests individually:
 
 ```shell
 $ python test/script_test_download.py

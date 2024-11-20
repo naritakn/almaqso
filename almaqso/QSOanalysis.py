@@ -1,9 +1,29 @@
 import almaqa2csg as csg
-import analysisUtils as au
+import analysisUtils as aU
 import os
 import sys
 import numpy as np
 import glob
+import subprocess
+
+
+def _run_casa_cmd(casa, cmd):
+    try:
+        result = subprocess.run(
+            [casa, '--nologger', '--nogui', '-c', f'"{cmd}"'],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        print(f"STDOUT for {cmd}:", result.stdout)
+        print(f"STDERR for {cmd}:", result.stderr)
+    except subprocess.CalledProcessError as e:
+        print(f"Error while executing {cmd}:")
+        print(f"Return Code: {e.returncode}")
+        print(f"STDOUT: {e.stdout}")
+        print(f"STDERR: {e.stderr}")
+        raise
 
 
 class QSOanalysis():
@@ -20,7 +40,7 @@ class QSOanalysis():
             (tarfilename.split('_uid___')[1]).replace('.asdm.sdm.tar', '')
 
         try:
-            print(f'analysisUtils of {au.version()} will be used.')
+            print(f'analysisUtils of {aU.version()} will be used.')
         except Exception:
             raise Exception('analysisUtils is not found')
 
@@ -97,7 +117,7 @@ class QSOanalysis():
             importasdm(**kw_importasdm)
 
             try:
-                self.spws = au.getScienceSpws(vis=visname).split(",")
+                self.spws = aU.getScienceSpws(vis=visname).split(",")
                 os.system('mkdir -p tempfiles')
                 np.save('tempfiles/spws.npy', np.array(self.spws))
 
@@ -107,7 +127,7 @@ class QSOanalysis():
             try:
                 self.spws = np.load('tempfiles/spws.npy')
             except Exception:
-                self.spws = au.getScienceSpws(vis=visname).split(",")
+                self.spws = aU.getScienceSpws(vis=visname).split(",")
                 os.system('mkdir -p tempfiles')
                 np.save('tempfiles/spws.npy', np.array(self.spws))
 
@@ -119,40 +139,39 @@ class QSOanalysis():
     # step2: generate calib script
     def gen_calib_script(self, dryrun=False):
         try:
-            refant = au.commonAntennas(self.visname)
+            refant = aU.commonAntennas(self.visname)
+            vis = self.visname
         except Exception:
-            refant = au.commonAntennas(self.visname+'.split')
-        kw_generateReducScript = {
-            'msNames': self.visname,
-            'refant': refant[0],
-            'corrAntPos': False,
-        }
+            refant = aU.commonAntennas(self.visname + '.split')
+            vis = self.visname + '.split'
 
         if not dryrun:
             if os.path.exists(
                     f'./log/{self.visname}.scriptForCalibration.py'
-                    ):
-                os.system('cp ./log/'+self.visname +
-                          '.scriptForCalibration.py ./')
+                ):
+                print('Calibration script already exists.')
+                os.system(f'cp ./log/{self.visname}.scriptForCalibration.py ./')
             else:
+                print('Calibration script will be generated.')
                 csg.generateReducScript(
-                    **kw_generateReducScript, useCalibratorService=False)
-                # au.generateReducScript(**kw_generateReducScript)
-                os.system('mkdir -p ./log')
-                os.system('cp '+self.visname +
-                          '.scriptForCalibration.py ./log/')
+                        msNames = vis,
+                        refant = refant[0],
+                        corrAntPos = False,
+                        useCalibratorService = False,
+                        useLocalAlmaHelper = False
+                )
+                os.makedirs('./log', exist_ok=True)
+                os.system(f'cp {self.visname}.scriptForCalibration.py ./log/')
 
         self.refant = refant
-        self.dish_diameter = au.almaAntennaDiameter(refant[0])
+        self.dish_diameter = aU.almaAntennaDiameter(refant[0])
 
         self.writelog('step2:OK')
 
     # step3: remove TARGET observations
     def remove_target(self, dryrun=False):
-
         if not dryrun:
-
-            IntentListASDM = au.getIntentsFromASDM(self.asdmfile)
+            IntentListASDM = aU.getIntentsFromASDM(self.asdmfile)
 
             IntentList = []
             for intfield in list(IntentListASDM):
@@ -204,18 +223,18 @@ class QSOanalysis():
                                                 '.part.py')+"'"+')' + '"'
             os.system(self.casacmd+' --nologger --nogui -c '+cmd)
 
-        vis = self.visname  # + '.split'
+        vis = self.visname + '.split'
         # if vis not in glob.glob('./*'):
         #     vis = self.visname
 
-        fields = np.unique(au.getCalibrators(vis=vis))
+        fields = np.unique(aU.getCalibrators(vis=vis))
         self.fields = []
 
         for field in fields:
             if field[0] == 'J':
                 self.fields.append(field)
 
-        self.beamsize = au.estimateSynthesizedBeam(vis)
+        self.beamsize = aU.estimateSynthesizedBeam(vis)
         from casatools import synthesisutils
         su = synthesisutils()
 
@@ -247,37 +266,46 @@ class QSOanalysis():
 
     # step5-1: split calibrator observations
     def uvfit_splitQSO(self, spw, field, dryrun=False):
-
         self.spw = spw
         self.field = field
 
         vis = self.visname + '.split'
-        # if vis not in glob.glob('./*'):
-        #     vis = self.visname
-        kw_mstransform = {
+
+        kw_split = {
             'vis': vis,
-            'outputvis': f'calibrated/{vis}.{self.field}.spw_{self.spw}',
+            'outputvis': f'calibrated/{vis}.{field}.spw_{spw}',
             'datacolumn': 'corrected',
             'spw': spw,
             'field': field,
             'intent': '*ON_SOURCE*',
             'keepflags': False,
-            'reindex': True,
-            'regridms': True,
-            'mode': 'channel',
-            'outframe': 'LSRK',
         }
+
+        # kw_mstransform = {
+        #     'vis': vis,
+        #     'outputvis': f'calibrated/{vis}.{self.field}.spw_{self.spw}',
+        #     'datacolumn': 'corrected',
+        #     'spw': spw,
+        #     'field': field,
+        #     'intent': '*ON_SOURCE*',
+        #     'keepflags': False,
+        #     'reindex': True,
+        #     'regridms': True,
+        #     'mode': 'channel',
+        #     'outframe': 'LSRK',
+        # }
 
         if not dryrun:
             os.system('mkdir -p calibrated')
-            os.system('rm -rf '+kw_mstransform['outputvis'])
-            os.system('rm -rf '+kw_mstransform['outputvis']+'.listobs')
+            os.system('rm -rf '+kw_split['outputvis'])
+            os.system('rm -rf '+kw_split['outputvis']+'.listobs')
 
-            from casatasks import mstransform, listobs, delmod
-            mstransform(**kw_mstransform)
-            delmod(vis=kw_mstransform['outputvis'], otf=True, scr=False)
-            listobs(vis=kw_mstransform['outputvis'],
-                    listfile=kw_mstransform['outputvis']+'.listobs')
+            from casatasks import mstransform, listobs, delmod, split
+            split(**kw_split)
+            # mstransform(**kw_mstransform)
+            delmod(vis=kw_split['outputvis'], otf=True, scr=False)
+            listobs(vis=kw_split['outputvis'],
+                    listfile=kw_split['outputvis']+'.listobs')
 
     def avgspws(self, inputvis, dryrun=False):
         tb.open(inputvis)
@@ -313,31 +341,34 @@ class QSOanalysis():
         if not dryrun:
             from casatasks import split, listobs, delmod
             os.system('mkdir -p ./calibrated')
-            # Nchans = [au.getNChanFromCaltable(self.visname+'.split')[int(spw)] for spw in self.spws]
+            # Nchans = [aU.getNChanFromCaltable(self.visname+'.split')[int(spw)] for spw in self.spws]
             vis = self.visname + '.split'
-            # if vis not in glob.glob('./*'):
-            #     vis = self.visname
+
+            width = aU.getNChanFromCaltable(vis)
+            if not isinstance(width, int):
+                width = width[int(spw)]
+
             kw_split = {
                 'vis': vis,
-                'outputvis': f'calibrated/{vis}.split.{field}.spw_{spw}.avg',
+                'outputvis': f'calibrated/{vis}.{field}.spw_{spw}.avg',
                 'datacolumn': 'corrected',
                 'spw': spw,
-                'width': au.getNChanFromCaltable(vis)[int(spw)],
+                'width': width,
                 'field': field,
                 'intent': '*ON_SOURCE*',
                 'keepflags': False,
             }
 
-            kw_mstransform = {
-                'vis': kw_split['outputvis'],
-                'outputvis': f'calibrated/{vis}.{field}.spw_{spw}.avg',
-                'datacolumn': 'all',
-                'keepflags': False,
-            }
+            # kw_mstransform = {
+            #     'vis': kw_split['outputvis'],
+            #     'outputvis': f'calibrated/{vis}.{field}.spw_{spw}.avg',
+            #     'datacolumn': 'all',
+            #     'keepflags': False,
+            # }
 
             os.system('rm -rf '+kw_split['outputvis'])
-            os.system('rm -rf '+kw_mstransform['outputvis'])
-            os.system('rm -rf '+kw_mstransform['outputvis']+'.listobs')
+            os.system('rm -rf '+kw_split['outputvis'])
+            os.system('rm -rf '+kw_split['outputvis']+'.listobs')
             split(**kw_split)
             delmod(vis=kw_split['outputvis'], otf=True, scr=False)
             listobs(vis=kw_split['outputvis'],
@@ -349,11 +380,8 @@ class QSOanalysis():
     # step5-2: create model column
     def uvfit_createcol(self, modelcol=True, dryrun=False):
         if not dryrun:
-            vis = self.visname + '.split.split'
-            # if vis not in glob.glob('./*'):
-            #     vis = self.visname
             kw_clearcal = {
-                'vis': f'calibrated/{vis}.{self.field}.spw_{self.spw}',
+                'vis': f'calibrated/{self.visname}.split.{self.field}.spw_{self.spw}',
                 'addmodel': modelcol,
             }
 
@@ -368,55 +396,38 @@ class QSOanalysis():
             os.system('mkdir -p tempfiles')
             os.system('mkdir -p specdata')
 
-            vis = self.visname + '.split.split'
-            # if vis not in glob.glob('./*'):
-            #     vis = self.visname
+            vis = self.visname + '.split'
 
             if intent is None:
                 outfile = f'{vis}.{self.field}.spw_{self.spw}.dat'
             else:
                 outfile = f'{vis}.{self.field}.spw_{self.spw}.{intent}.dat'
 
-            # spws = ','.join(np.array(range(len(self.spws))).astype('<3U'))
-            f = open('./tempfiles/'+outfile.replace('.dat', '.kw_uvfit.py'), 'w')
-            f.write('from NordicARC import uvmultifit as uvm'+'\n')
-            f.write('\n')
-            f.write('kw_uvfit = {'+'\n')
-            f.write('   "vis":"'+'calibrated/'+vis+'.' +
-                    self.field+'.spw_'+self.spw+'",'+'\n')
-            f.write('   "spw":"0",'+'\n')
-            f.write('   "column":"'+column+'",'+'\n')
-            f.write('   "field":"0",'+'\n')
-            f.write('   "stokes":"I",'+'\n')
-            f.write('   "NCPU":8,'+'\n')
-            f.write('   "pbeam":True,'+'\n')
-            f.write('   "dish_diameter":'+str(self.dish_diameter)+','+'\n')
-            f.write('   "chanwidth":1,'+'\n')
-            f.write('   "var":["0,0,p[0]"],'+'\n')
-            f.write('   "p_ini":[10.0],'+'\n')
-            f.write('   "model":["delta"],'+'\n')
-            f.write('   "OneFitPerChannel":'+str((not mfsfit))+','+'\n')
-            f.write('   "write":"'+write+'",'+'\n')
-            f.write('   "method":"simplex",'+'\n')
-            f.write('   "bounds":[[0,None]],')
-            # f.write('   "SMPtune":[1.e-4,1.e-1,10000],')
-            f.write('   "outfile":"./specdata/'+outfile+'",'+'\n')
-            f.write('   }'+'\n')
-            f.write('myfit = uvm.uvmultifit(**kw_uvfit)'+'\n')
-            f.close()
-
-            options = "--nologger --nogui --nologfile"
-            script_path = f"./tempfiles/\
-                    {outfile.replace('.dat', '.kw_uvfit.py')}"
-            script_command = f"execfile('{script_path}')"
-            cmd = f"{self.casacmdforuvfit} {options} -c '{script_command}'"
-
-            os.system(cmd)
+            from NordicARC import uvmultifit as uvm
+            myfit = uvm.uvmultifit(
+                    vis=f'calibrated/{vis}.{self.field}.spw_{self.spw}',
+                    spw='0',
+                    column=column,
+                    field=0,
+                    stokes='I',
+                    NCPU=8,
+                    pbeam=True,
+                    dish_diameter=self.dish_diameter,
+                    chanwidth=1,
+                    var=['0,0,p[0]'],
+                    p_ini=[10.0],
+                    model=['delta'],
+                    OneFitPerChannel=(not mfsfit),
+                    write=write,
+                    method='simplex',
+                    bounds=[[0, None]],
+                    outfile=f'./specdata/{outfile}',
+                    )
 
     # step5-4: gaincal
     def uvfit_gaincal(self, intent='phase', solint='int', solnorm=False,
                       gaintype='G', calmode='p', gaintable='', dryrun=False):
-        vis = self.visname + '.split.split'
+        vis = self.visname + '.split'
         # if vis not in glob.glob('./*'):
         #     vis = self.visname
 
@@ -446,7 +457,7 @@ class QSOanalysis():
     # step5-5: applycal
     def uvfit_applycal(self, gaintable='', dryrun=False, removeflag=False):
         if not dryrun:
-            vis = self.visname + '.split.split'
+            vis = self.visname + '.split'
             # if vis not in glob.glob('./*'):
             #     vis = self.visname
 
@@ -490,7 +501,7 @@ class QSOanalysis():
                 for field in self.fields:
                     for spw in self.spws:
                         # spw = 'all'
-                        caltablebase = self.asdmname+'.ms.split.split.'+field+'.spw_'+spw+'.avg'
+                        caltablebase = self.asdmname+'.ms.split.'+field+'.spw_'+spw+'.avg'
                         caltable0 = './caltables/' + caltablebase + '.'+type+'_0'
                         caltable1 = './caltables/' + caltablebase + '.'+type+'_1'
 
@@ -537,7 +548,7 @@ class QSOanalysis():
 
                 for field in self.fields:
                     for spw in self.spws:
-                        caltablebase = self.asdmname+'.ms.split.split.'+field+'.spw_'+spw
+                        caltablebase = self.asdmname+'.ms.split.'+field+'.spw_'+spw
                         caltable0 = './caltables/' + caltablebase + '.'+type+'_0'
                         caltable1 = './caltables/' + caltablebase + '.'+type+'_1'
 
@@ -589,7 +600,7 @@ class QSOanalysis():
                 from scipy.optimize import least_squares
                 tb = table()
                 tb.open('calibrated/'+self.visname +
-                        '.split.split.'+self.field+'.spw_'+self.spw)
+                        '.split.'+self.field+'.spw_'+self.spw)
                 if datacolumn == 'data':
                     data = tb.getcol('DATA').copy()
                 elif datacolumn == 'corrected':
@@ -615,7 +626,7 @@ class QSOanalysis():
                     model[0, :, i] = model[0, :, i] + spec.astype('complex')
                     model[1, :, i] = model[1, :, i] + spec.astype('complex')
 
-                tb.open('calibrated/'+self.visname+'.split.split.' +
+                tb.open('calibrated/'+self.visname+'.split.' +
                         self.field+'.spw_'+self.spw, nomodify=False)
                 if savemodel:
                     tb.putcol('MODEL_DATA', model.copy())
@@ -634,14 +645,14 @@ class QSOanalysis():
 
                 if intent is None:
                     infile = './specdata/'+self.visname + \
-                        '.split.split.'+self.field+'.spw_'+self.spw+'.dat'
+                        '.split.'+self.field+'.spw_'+self.spw+'.dat'
                 else:
-                    infile = './specdata/'+self.visname+'.split.split.' + \
+                    infile = './specdata/'+self.visname+'.split.' + \
                         self.field+'.spw_'+self.spw+'.'+intent+'.dat'
 
                 # spec
                 tb.open('calibrated/'+self.visname +
-                        '.split.split.'+self.field+'.spw_'+self.spw)
+                        '.split.'+self.field+'.spw_'+self.spw)
                 data = tb.getcol('DATA')
                 model = np.zeros_like(data, dtype='complex')
                 modeldata = np.loadtxt(infile)
@@ -652,7 +663,7 @@ class QSOanalysis():
                     model[1, :, i] = model[1, :, i] + spec.astype('complex')
 
                 tb.close()
-                tb.open('calibrated/'+self.visname+'.split.split.' +
+                tb.open('calibrated/'+self.visname+'.split.' +
                         self.field+'.spw_'+self.spw, nomodify=False)
                 if savemodel:
                     tb.putcol('MODEL_DATA', model.copy())
@@ -714,42 +725,61 @@ class QSOanalysis():
         for _field in self.fields:
             for _spw in self.spws:
                 # selfcal by avaraged MS
+                print(f'### field: {_field}, spw: {_spw} ###')
+                print('step5-1')
                 self.uvfit_splitQSO_avg(spw=_spw, field=_field, dryrun=dryrun)
+                print('step5-2 (1)')
                 self.uvfit_createcol(dryrun=dryrun)
+                print('step5-3 (1)')
                 self.uvfit_uvmultifit(
                     write='', column='data', dryrun=dryrun, mfsfit=True, intent='noselfcal')
+                print('step5-7 (1)')
                 self.uvfit_man(datacolumn='data', write_residuals=False,
                                savemodel=True, intent='noselfcal', dryrun=dryrun, meansub=False)
 
+                print('step5-4 (1)')
                 gaintable_p = self.uvfit_gaincal(
                     intent='phase_0', solint='int', gaintype='G', calmode='p', gaintable='', dryrun=dryrun)
+                print('step5-4 (2)')
                 gaintable_ap = self.uvfit_gaincal(
                     intent='amp_phase_0', solint='int', solnorm=True, gaintype='T', calmode='ap', gaintable=[gaintable_p], dryrun=dryrun)
+                print('step5-5 (1)')
                 self.uvfit_applycal(
                     gaintable=[gaintable_p, gaintable_ap], dryrun=dryrun, removeflag=False)
 
+                print('step5-3 (2)')
                 self.uvfit_uvmultifit(
                     write='', column='corrected', intent='selfcal', dryrun=dryrun, mfsfit=True)
+                print('step5-7 (2)')
                 self.uvfit_man(datacolumn='corrected', write_residuals=True,
                                savemodel=True, intent='selfcal', dryrun=dryrun, meansub=False)
 
+                print('step5-4 (3)')
                 gaintable_p1 = self.uvfit_gaincal(intent='phase_1', solint='int', gaintype='T', calmode='p', gaintable=[
                                                   gaintable_p, gaintable_ap], dryrun=dryrun)
+                print('step5-4 (4)')
                 gaintable_ap1 = self.uvfit_gaincal(intent='amp_phase_1', solint='int', solnorm=True, gaintype='T', calmode='ap', gaintable=[
                                                    gaintable_p, gaintable_ap, gaintable_p1], dryrun=dryrun)
-
+                
+                # selfcal by no-avaraged MS
+                print('step5-1\'')
                 self.uvfit_splitQSO(spw=_spw, field=_field, dryrun=dryrun)
+                print('step5-2 (2)')
+                self.uvfit_createcol(dryrun=dryrun)
+                print('step5-3 (3)')
                 self.uvfit_uvmultifit(
                     write='', column='data', intent='noselfcal', dryrun=dryrun, mfsfit=False)
+                print('step5-5 (2)')
                 self.uvfit_applycal(
                     gaintable=[gaintable_p, gaintable_ap, gaintable_p1, gaintable_ap1], dryrun=dryrun)
+                print('step5-3 (4)')
                 self.uvfit_uvmultifit(
                     write='', column='corrected', intent='selfcal', dryrun=dryrun, mfsfit=False)
                 if self.spacesave:
                     os.system('rm -rf calibrated/'+self.visname +
-                              '.split.split.'+self.field+'.spw_'+self.spw)
+                              '.split.'+self.field+'.spw_'+self.spw)
                     os.system('rm -rf calibrated/'+self.visname +
-                              '.split.split.'+self.field+'.spw_'+self.spw+'.listobs')
+                              '.split.'+self.field+'.spw_'+self.spw+'.listobs')
 
         self.uvfit_gainplot(dryrun=(not plot), allspws=True, type='phase')
         self.uvfit_gainplot(dryrun=(not plot), allspws=True, type='amp_phase')
@@ -764,7 +794,7 @@ class QSOanalysis():
             for field in self.fields:
                 os.system('rm -rf '+'./calibrated/concat.'+field+'.ms')
                 visForimsg = glob.glob(
-                    './calibrated/'+self.visname+'.split.split.'+field+'.spw_*.avg')
+                    './calibrated/'+self.visname+'.split.'+field+'.spw_*.avg')
 
                 kw_tclean = {
                     'vis': visForimsg,
@@ -848,8 +878,8 @@ class QSOanalysis():
                 for field in self.fields:
                     for spw in self.spws:
                         kw_mstransform = {
-                            'vis': 'calibrated/'+self.visname+'.split.split.'+field+'.spw_'+spw+'.avg',
-                            'outputvis': 'calibrated/'+self.visname+'.split.split.'+field+'.spw_'+spw+'.avg'+'.selfcal.residual',
+                            'vis': 'calibrated/'+self.visname+'.split.'+field+'.spw_'+spw+'.avg',
+                            'outputvis': 'calibrated/'+self.visname+'.split.'+field+'.spw_'+spw+'.avg'+'.selfcal.residual',
                             'datacolumn': 'corrected',
                             'keepflags': True
                         }
@@ -907,7 +937,7 @@ class QSOanalysis():
                         for selfcal in ['noselfcal', 'selfcal']:
                             try:
                                 specfile = './specdata/'+self.visname + \
-                                    '.split.split.'+field+'.spw_'+spw+'.'+selfcal+'.dat'
+                                    '.split.'+field+'.spw_'+spw+'.'+selfcal+'.dat'
                                 data = np.loadtxt(specfile)
                                 freq = data[:, 0]/1.0e9  # GHz
                                 spec = data[:, 1]  # Jy
