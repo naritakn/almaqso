@@ -63,15 +63,17 @@ $ pipenv shell
 
 ### Test run
 
-Then, you can run the test by
+Edit `test/test_download_analysis.py`:
+
+```python
+# test/test_download_analysis.py
+# Edit the following constants.
+DOWNLOAD = False  # True: Download the tar file, False: Use the existing tar file
+MODE = 'aftercal'  # 'all': All Steps, 'calonly': Step 1-4, 'aftercal': Step 5-8 of analysis
+```
+
+Then you can run the test by
 
 ```
 $ pytest
-```
-
-Or you can examine downloading and analysis tests individually:
-
-```shell
-$ python test/script_test_download.py
-$ python test/script_test_analysis.py
 ```
