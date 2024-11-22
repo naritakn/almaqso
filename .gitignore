@@ -3,6 +3,7 @@
 *.tar
 /uid__*
 Pipfile.lock
+*.last
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
