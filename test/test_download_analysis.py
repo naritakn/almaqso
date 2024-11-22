@@ -11,8 +11,8 @@ DATA_PATH = './uid___A002_Xd68367_X9885'
 TARFILE = './2018.1.01575.S_uid___A002_Xd68367_X9885.asdm.sdm.tar'
 
 # Edit the following constants.
-DOWNLOAD = False  # True: Download the tar file, False: Use the existing tar file
-MODE = 'aftercal'  # 'all': All Steps, 'calonly': Step 1-4, 'aftercal': Step 5-8 of analysis
+DOWNLOAD = True  # True: Download the tar file, False: Use the existing tar file
+MODE = 'all'  # 'all': All Steps, 'calonly': Step 1-4, 'aftercal': Step 5-8 of analysis
 
 
 def run_casa_script(script_name):
@@ -53,4 +53,5 @@ def test_analysis():
     run_casa_script(cmd)
 
     if MODE == 'calonly':
+        os.system(f'rm -rf {DATA_PATH}_backup')
         os.system(f'cp -r {DATA_PATH} {DATA_PATH}_backup')
