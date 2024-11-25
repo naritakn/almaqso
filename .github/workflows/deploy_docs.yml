@@ -27,10 +27,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install pipenv
         pipenv install --dev
+        pipenv requirements --dev > requirements.txt
+        pip install -r requirements.txt
 
     - name: Build documentation
       run: |
-        pipenv shell
         make -C sphinx html
 
     - name: Deploy to GitHub Pages
