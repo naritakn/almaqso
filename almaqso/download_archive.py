@@ -9,7 +9,7 @@ def download_archive(band: int, jfilename: str):
     Download the archive data from ALMA Science Archive.
 
     Args:
-        band (int): Band number.
+        band (int): Band number to download.
         jfilename (str): JSON file name.
     """
     try:

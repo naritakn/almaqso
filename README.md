@@ -14,7 +14,7 @@ So many bugs are still there, and I am trying to fix them.
 ### CASA Modules
 
 - analysisUtilities
-- UVMultiFit  If you use CASA 6, you should switch the branch to `develop` to build properly.
+- UVMultiFit: (optional) When you run analysis with `mode='aftercal'` or `mode='all'` (this means that you run Step 5), this is needed. If you use CASA 6, you should switch the branch to `develop` to build properly.
 
 Details (e.g., how to install and modify) are described in [Pre-requisites](PreRequisites.md).
 
@@ -40,6 +40,10 @@ Write above line in your `config.fish`.
 ```shell
 set -gx ALMAQSO_CASA /path/to/your/casa
 ```
+
+**Note**
+
+I am considering to delete this feature and alternatively I want you to specify the path to CASA in the parameter of the functions.
 
 ### Prepare the environment
 
@@ -77,3 +81,10 @@ Then you can run the test by
 ```
 $ pytest
 ```
+
+### Usage
+
+To work with this package, you have to download JSON files from [ALMA Calibrator Source Catalogue](https://almascience.nao.ac.jp/sc/).
+Explanation on it is [here](https://almascience.nao.ac.jp/alma-data/calibrator-catalogue).
+
+Sample code is at `sample/sample.py`.
