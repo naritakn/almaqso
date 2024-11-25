@@ -2,7 +2,7 @@ import os
 from .QSOanalysis import QSOanalysis
 
 
-def analysis(tarfilename: str, skipflag='skip', casacmd='casa', mode='all'):
+def analysis(tarfilename: str, skipflag='skip', casacmd='casa', mode='calonly'):
     obj = QSOanalysis(tarfilename, spacesave=True, casacmd=casacmd, casacmdforuvfit='casa')
 
     asdmname = 'uid___' + (tarfilename.split('_uid___')
