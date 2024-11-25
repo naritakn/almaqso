@@ -1,3 +1,5 @@
+[![Static Badge](https://img.shields.io/badge/docs-GitHub%20Pages-blue?logo=GitHub)](https://skrbcr.github.io/almaqso/)
+
 # almaqso
 
 This repository is a folk of [astroysmr/almaqso](https://github.com/astroysmr/almaqso), which is no longer maintained.
