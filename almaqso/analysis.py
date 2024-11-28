@@ -1,44 +1,42 @@
 import os
-from .QSOanalysis import QSOanalysis
+import subprocess
 
 
-def analysis(tarfilename: str, skipflag='skip', casacmd='casa', mode='calonly'):
-    obj = QSOanalysis(tarfilename, spacesave=True, casacmd=casacmd, casacmdforuvfit='casa')
+def _run_casa_script(casa: str, cmd: str, cmd_name: str):
+    try:
+        result = subprocess.run(
+            [casa, '--nologger', '--nogui', '-c', cmd],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        print(f"STDOUT for {cmd_name}:", result.stdout)
+        print(f"STDERR for {cmd_name}:", result.stderr)
+    except subprocess.CalledProcessError as e:
+        print(f"Error while executing {cmd}:")
+        print(f"Return Code: {e.returncode}")
+        print(f"STDOUT: {e.stdout}")
+        print(f"STDERR: {e.stderr}")
+        raise
 
-    asdmname = 'uid___' + (tarfilename.split('_uid___')
-                           [1]).replace('.asdm.sdm.tar', '')
 
-    if os.path.exists(asdmname) and skipflag == 'skip':
-        print(asdmname+': analysis already done and skip')
+def analysis(tardir: str, mode='calonly', casacmd='casa', skip=True):
+    """
+    Run the analysis of the QSO data.
 
-    else:
-        if os.path.exists(asdmname):
-            print(asdmname+': analysis already done but reanalyzed')
+    Args:
+        tardir (str): Directory containing the `*.asdm.sdm.tar` files.
+        mode (str): 'calonly': Step 1-4, 'aftercal': Step 5-8 of analysis, 'all': Step 1-8 of analysis. Default is 'calonly'.
+        casacmd (str): CASA command. Default is 'casa'.
+        skip (bool): Skip the analysis if the output directory exists. Default is True.
+    """
+    asdm_files = [file for file in os.listdir(f'{tardir}') if file.endswith('.asdm.sdm.tar')]
 
-        if mode == 'aftercal':
-            dryrun = True
-        else:
-            dryrun = False
+    for asdm_file in asdm_files:
+        cmd = "sys.path.append('.');" + \
+            "from almaqso._analysis import _analysis;" + \
+            f"_analysis('{asdm_file}', skip={skip}," + \
+            f"casacmd='{casacmd}', mode='{mode}')"
+        _run_casa_script(casacmd, cmd, asdm_file)
 
-        print('step:0')
-        obj.intial_proc(dryrun=dryrun)
-        print('step:1')
-        obj.importasdm(dryrun=dryrun)
-        print('step:2')
-        obj.gen_calib_script(dryrun=dryrun)
-        print('step:3')
-        obj.remove_target(dryrun=dryrun)
-        print('step:4')
-        obj.doCalib(dryrun=dryrun)
-        # obj.init_spacesave()
-
-        if mode != 'calonly':
-            print('step:5')
-            obj.uvfit_run(plot=True)
-            print('step:6')
-            obj.cont_imaging()
-            print('step:7')
-            obj.spacesaving(gzip=True)
-
-            print('step:8')
-            obj.specplot()

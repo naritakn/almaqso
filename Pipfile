@@ -16,6 +16,8 @@ ipython = "*"
 flake8 = "*"
 autopep8 = "*"
 pytest = "*"
+sphinx = "*"
+sphinx-rtd-theme = "*"
 
 [requires]
 
